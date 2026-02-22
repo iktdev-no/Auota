@@ -1,0 +1,26 @@
+spring:
+  output:
+    ansi:
+      enabled: always
+  webflux:
+    request:
+      timeout: 0
+  web:
+    resources:
+      add-mappings: true
+
+server:
+  port: ${APP_DEPLOYMENT_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+
+backup:
+  root: ${BACKUP_ROOT}
