@@ -1,10 +1,8 @@
-package no.iktdev.japp
+package no.iktdev.japp.sse
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
 import reactor.core.publisher.FluxSink
@@ -13,13 +11,12 @@ import reactor.core.publisher.FluxSink
 class SseHub {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val subscribers = mutableListOf<FluxSink<String>>()
-    private val mapper = ObjectMapper()
+    private val subscribers = mutableListOf<FluxSink<Any>>()  // send objects, not String
 
     private var onFirstSubscriber: (() -> Unit)? = null
     private var onNoSubscribers: (() -> Unit)? = null
 
-    fun stream(): Flux<String> {
+    fun stream(): Flux<Any> {
         return Flux.create { sink ->
             val first: Boolean
             synchronized(subscribers) {
@@ -45,9 +42,9 @@ class SseHub {
     }
 
     fun sendEnvelope(type: String, payload: Any?) {
-        val json = mapper.writeValueAsString(mapOf("type" to type, "payload" to payload))
+        val envelope = mapOf("type" to type, "payload" to payload)
         synchronized(subscribers) {
-            subscribers.forEach { it.next(json) }
+            subscribers.forEach { it.next(envelope) }  // send object, not JSON string
         }
     }
 

@@ -6,6 +6,7 @@ import mu.KotlinLogging
 import no.iktdev.japp.cli.JottaCli
 import no.iktdev.japp.models.AuthResponse
 import no.iktdev.japp.models.AuthStep
+import no.iktdev.japp.sse.SseHub
 import org.springframework.stereotype.Service
 import java.io.BufferedReader
 import java.io.BufferedWriter
@@ -14,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Service
 class AuthService(
+    private val sseHub: SseHub,
     private val cli: JottaCli
 ) {
     private val log = KotlinLogging.logger {}
@@ -46,42 +48,43 @@ class AuthService(
         val t = output.lowercase()
 
         return when {
-            // License prompt
             "accept license" in t && "(yes/no)" in t ->
                 AuthStep.LICENSE
 
-            // PAT prompt
             "personal login token" in t ||
                     "personal access token" in t ->
                 AuthStep.PAT
 
-            // CLI is working
             "logging in" in t && "please wait" in t ->
                 AuthStep.WAIT
 
-            // Device name prompt
             "device name" in t ->
                 AuthStep.DEVICE_NAME
 
-            // Successful login
+            // ⭐ NEW: logout confirmation
+            "continue?" in t && "(y/n)" in t ->
+                AuthStep.CONFIRM
+
             "logged in as" in t ->
                 AuthStep.DONE
 
-            // PAT errors
             "invalid token" in t ||
                     "could not login" in t ||
                     "server did not recognize the provided credentials" in t ||
                     "authentication failed" in t ->
                 AuthStep.ERROR
 
-            // Generic error
+            "cancelled" in t -> AuthStep.CANCELLED
+
             "error" in t && "login" in t ->
                 AuthStep.ERROR
+
 
             else ->
                 AuthStep.UNKNOWN
         }
     }
+
 
     // -----------------------------
     // RAW STREAM READER
@@ -167,7 +170,6 @@ class AuthService(
         val text = readUntilPrompt(sessionId, session)
         val step = detectStep(text)
 
-        // DONE or ERROR → finalize
         if (step == AuthStep.DONE || step == AuthStep.ERROR) {
             withContext(Dispatchers.IO) { session.process.waitFor() }
             val exit = session.process.exitValue()
@@ -175,6 +177,13 @@ class AuthService(
             sessions.remove(sessionId)
 
             val ok = (exit == 0 && step == AuthStep.DONE)
+
+            if (ok) {
+                sseHub.sendEnvelope("jotta.loggedIn", null)
+            } else {
+                sseHub.sendEnvelope("jotta.error", mapOf("message" to text))
+            }
+
             return AuthResponse(
                 success = ok,
                 message = if (ok) completeMessage else "CLI exited with code $exit\n\n$text",
@@ -203,12 +212,18 @@ class AuthService(
         val text = readUntilPrompt(sessionId, session)
         val step = detectStep(text)
 
-        // If CLI is dead, finalize
         if (!session.process.isAlive) {
             val exit = session.process.exitValue()
             sessions.remove(sessionId)
 
             val ok = (exit == 0 && step == AuthStep.DONE)
+
+            if (ok) {
+                sseHub.sendEnvelope("jotta.loggedIn", null)
+            } else {
+                sseHub.sendEnvelope("jotta.error", mapOf("message" to text))
+            }
+
             return AuthResponse(
                 success = ok,
                 message = if (ok) "Login complete" else "CLI exited with code $exit\n\n$text",
@@ -217,9 +232,9 @@ class AuthService(
             )
         }
 
-        // If CLI reports error
         if (step == AuthStep.ERROR) {
             sessions.remove(sessionId)
+            sseHub.sendEnvelope("jotta.error", mapOf("message" to text))
             return AuthResponse(
                 success = false,
                 message = text,
@@ -248,6 +263,27 @@ class AuthService(
     suspend fun startLogout(): AuthResponse =
         startInteractiveCommand("logout")
 
-    suspend fun answerLogout(sessionId: String, input: String): AuthResponse =
-        answerInteractiveCommand(sessionId, input, "Logout complete")
+    suspend fun answerLogout(sessionId: String, input: String): AuthResponse {
+        val res = answerInteractiveCommand(sessionId, input, "Logout complete")
+
+        return when (res.step) {
+            AuthStep.DONE -> {
+                sseHub.sendEnvelope("jotta.loggedOut", null)
+                res
+            }
+
+            AuthStep.CANCELLED -> {
+                // Ikke feil, bare avbrutt av bruker
+                AuthResponse(
+                    success = false,
+                    message = "Logout cancelled",
+                    step = AuthStep.CANCELLED,
+                    sessionId = null
+                )
+            }
+
+            else -> res
+        }
+    }
+
 }

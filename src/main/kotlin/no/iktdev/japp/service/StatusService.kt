@@ -6,20 +6,25 @@ import no.iktdev.japp.models.StatusResponse
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import no.iktdev.japp.SseHub
+import mu.KotlinLogging
+import no.iktdev.japp.models.EncryptionState
+import no.iktdev.japp.sse.SseHub
 import no.iktdev.japp.models.JottaStatus
+import kotlin.math.log
 
 @Service
 class StatusService(
     private val cli: JottaCli,
     private val sse: SseHub,
-    private val mapper: ObjectMapper
+    private val encryptionManager: EncryptionManager
 ) {
+    private val log = KotlinLogging.logger {}
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var pollingJob: Job? = null
@@ -57,22 +62,79 @@ class StatusService(
     }
 
     suspend fun getStatus(): StatusResponse {
+
+        when (encryptionManager.state.value) {
+            EncryptionState.NOT_ENABLED -> {
+                return StatusResponse(
+                    success = false,
+                    raw = "",
+                    parsed = null,
+                    message = "Encryption disabled"
+                )
+            }
+
+            EncryptionState.NOT_INITIALIZED,
+            EncryptionState.INITIALIZING -> {
+                return StatusResponse(
+                    success = false,
+                    raw = "",
+                    parsed = null,
+                    message = "Encryption not ready"
+                )
+            }
+
+            EncryptionState.FAILED -> {
+                return StatusResponse(
+                    success = false,
+                    raw = "",
+                    parsed = null,
+                    message = "Encryption failed"
+                )
+            }
+
+            EncryptionState.READY -> {
+                // fortsett under
+            }
+        }
+
         val result = cli.run("status", "--json")
         val raw = result.output.trim()
 
-        try {
-            val parsed = mapper.readValue(raw, JottaStatus::class.java)
-            return StatusResponse(true, raw, parsed)
-        } catch (_: Exception) {}
+        // 1) Sjekk om det faktisk ser ut som JSON
+        val jsonStatus = getJsonStatus(raw)
+        if (jsonStatus != null) {
+            return StatusResponse(
+                success = true,
+                raw = raw,
+                parsed = jsonStatus,
+                message = null
+            )
+        } else {
+            log.error { "Could not parse status\n$jsonStatus" }
 
+        }
+
+        // 2) Ikke JSON → tolkes som tekstfeil
         val message = when {
-            raw.contains("Not logged in", true) -> "Not logged in"
-            raw.contains("Could not connect", true) -> "Jottad is not running"
-            raw.contains("Device not found", true) -> "Device not registered"
+            raw.contains("Not logged in", ignoreCase = true) -> "Not logged in"
+            raw.contains("Could not connect", ignoreCase = true) -> "Jottad is not running"
+            raw.contains("Device not found", ignoreCase = true) -> "Device not registered"
+            raw.contains("Permission denied", ignoreCase = true) -> "Permission denied"
+            raw.contains("mount", ignoreCase = true) -> "Mount error"
             else -> "Unknown error"
         }
 
         return StatusResponse(false, raw, null, message)
     }
+
+    fun getJsonStatus(raw: String): JottaStatus? {
+        return try {
+            Gson().fromJson(raw, JottaStatus::class.java)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
 }
 

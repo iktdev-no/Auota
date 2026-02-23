@@ -23,21 +23,21 @@ class EncryptionController(
     }
 
     @PostMapping("/init")
-    fun init(): ResponseEntity<EncryptionStatus> {
+    suspend fun init(): ResponseEntity<EncryptionStatus> {
         val cfg = manager.loadConfig()
         manager.init(cfg)
         return ResponseEntity.ok(manager.getStatus())
     }
 
     @PostMapping("/mount")
-    fun mount(): ResponseEntity<EncryptionStatus> {
+    suspend fun mount(): ResponseEntity<EncryptionStatus> {
         val cfg = manager.loadConfig()
         manager.mount(cfg)
         return ResponseEntity.ok(manager.getStatus())
     }
 
     @PostMapping("/unmount")
-    fun unmount(): ResponseEntity<EncryptionStatus> {
+    suspend fun unmount(): ResponseEntity<EncryptionStatus> {
         manager.unmount()
         return ResponseEntity.ok(manager.getStatus())
     }

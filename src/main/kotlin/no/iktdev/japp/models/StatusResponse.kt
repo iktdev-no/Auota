@@ -7,96 +7,97 @@ data class StatusResponse(
     val message: String? = null
 )
 
-
 data class JottaStatus(
-    val User: UserInfo?,
-    val Sync: SyncInfo?,
-    val State: GlobalState?,
-    val Backup: BackupInfo?
+    val User: UserInfo? = null,
+    val Sync: SyncInfo? = null,
+    val State: GlobalState? = null,
+    val Backup: BackupInfo? = null
 )
 
 data class UserInfo(
-    val Email: String?,
-    val Fullname: String?,
-    val Avatar: AvatarInfo?,
-    val Brand: String?,
-    val Hostname: String?,
-    val AccountInfo: AccountInfo?,
-    val device: DeviceInfo?
+    val Email: String? = null,
+    val Fullname: String? = null,
+    val Avatar: AvatarInfo? = null,
+    val Brand: String? = null,
+    val Hostname: String? = null,
+    val AccountInfo: AccountInfo? = null,
+    val device: DeviceInfo? = null
 )
 
 data class AvatarInfo(
-    val Initials: String?,
-    val Background: RgbColor?
+    val Initials: String? = null,
+    val Background: RgbColor? = null
 )
 
 data class RgbColor(
-    val r: Int,
-    val g: Int,
-    val b: Int
+    val r: Int? = null,
+    val g: Int? = null,
+    val b: Int? = null
 )
 
 data class AccountInfo(
-    val Capacity: Long,
-    val Usage: Long,
-    val Subscription: Int
+    val Capacity: Long? = null,
+    val Usage: Long? = null,
+    val Subscription: Int? = null,
+    val SubscriptionNameLocalized: String? = null,
+    val ProductNameLocalized: String? = null
 )
 
 data class DeviceInfo(
-    val Name: String?,
-    val Type: Int?
+    val Name: String? = null,
+    val Type: Int? = null
 )
 
 data class SyncInfo(
-    val Count: Map<String, Any>?,
-    val RemoteCount: Map<String, Any>?
+    val Count: Map<String, Any>? = null,
+    val RemoteCount: Map<String, Any>? = null
 )
 
 data class GlobalState(
-    val RestoreWorking: Boolean?,
-    val Uploading: Map<String, Any>?,
-    val Downloading: Map<String, Any>?,
-    val LastTokenRefresh: Long?
+    val RestoreWorking: Boolean? = null,
+    val Uploading: Map<String, Any>? = null,
+    val Downloading: Map<String, Any>? = null,
+    val LastTokenRefresh: Long? = null
 )
 
 data class BackupInfo(
-    val State: BackupState?
+    val State: BackupState? = null
 )
 
 data class BackupState(
-    val Enabled: EnabledBackup?
+    val Enabled: EnabledBackup? = null
 )
 
 data class EnabledBackup(
-    val deviceName: String?,
-    val Backups: List<BackupFolder>?
+    val deviceName: String? = null,
+    val Backups: List<BackupFolder>? = null
 )
 
 data class BackupFolder(
-    val Name: String?,
-    val Path: String?,
-    val Count: Map<String, Any>?,
-    val Uploading: Map<String, Any>?,
-    val Errors: Map<String, Any>?,
-    val DeviceID: String?,
-    val ErrorFilesCount: Map<String, Any>?,
-    val ErrorFoldersCount: Int?,
-    val History: List<BackupHistory>?,
-    val LastUpdateMS: Long?,
-    val LastScanStartedMS: Long?,
-    val NextBackupMS: Long?
+    val Name: String? = null,
+    val Path: String? = null,
+    val Count: Map<String, Any>? = null,
+    val Uploading: Map<String, Any>? = null,
+    val Errors: Map<String, Any>? = null,
+    val DeviceID: String? = null,
+    val ErrorFilesCount: Map<String, Any>? = null,
+    val ErrorFoldersCount: Int? = null,
+    val History: List<BackupHistory>? = null,
+    val LastUpdateMS: Long? = null,
+    val LastScanStartedMS: Long? = null,
+    val NextBackupMS: Long? = null
 )
 
 data class BackupHistory(
-    val Path: String?,
-    val Upload: UploadHistory?,
-    val Started: Long?,
-    val Ended: Long?,
-    val Finished: Boolean?,
-    val Total: Map<String, Any>?
+    val Path: String? = null,
+    val Upload: UploadHistory? = null,
+    val Started: Long? = null,
+    val Ended: Long? = null,
+    val Finished: Boolean? = null,
+    val Total: Map<String, Any>? = null
 )
 
 data class UploadHistory(
-    val Started: Map<String, Any>?,
-    val Completed: Map<String, Any>?
+    val Started: Map<String, Any>? = null,
+    val Completed: Map<String, Any>? = null
 )

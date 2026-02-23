@@ -1,6 +1,6 @@
 package no.iktdev.japp.controller
 
-import no.iktdev.japp.SseHub
+import no.iktdev.japp.sse.SseHub
 import no.iktdev.japp.models.LogfileResponse
 import no.iktdev.japp.service.LogService
 import org.springframework.http.MediaType
@@ -33,8 +33,4 @@ class LogController(
         }
     }
 
-    @GetMapping("/stream", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
-    fun streamLogfile(): Flux<String> {
-        return sse.stream()
-    }
 }

@@ -2,9 +2,13 @@ package no.iktdev.japp.service
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import jakarta.annotation.PostConstruct
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.withContext
 import mu.KotlinLogging
+import no.iktdev.japp.cli.RunCli
 import no.iktdev.japp.models.EncryptionConfig
+import no.iktdev.japp.models.EncryptionState
 import no.iktdev.japp.models.EncryptionStatus
 import org.springframework.stereotype.Service
 import java.nio.file.Files
@@ -12,9 +16,12 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 @Service
-class EncryptionManager {
-    val log = KotlinLogging.logger {}
+class EncryptionManager(
+    private val runCli: RunCli
+) {
+    private val log = KotlinLogging.logger {}
 
+    val state = MutableStateFlow(EncryptionState.NOT_INITIALIZED)
 
     private val mapper = jacksonObjectMapper()
 
@@ -22,7 +29,12 @@ class EncryptionManager {
     private val backendPath: Path = Paths.get("/crypt-backend")
     private val mountPath: Path = Paths.get("/crypt")
 
+    // ------------------------------------------------------------
+    // CONFIG
+    // ------------------------------------------------------------
+
     fun loadConfig(): EncryptionConfig {
+        log.info("Loading config")
         return if (Files.exists(configFile)) {
             mapper.readValue(configFile.toFile())
         } else {
@@ -35,6 +47,10 @@ class EncryptionManager {
         mapper.writerWithDefaultPrettyPrinter().writeValue(configFile.toFile(), cfg)
     }
 
+    // ------------------------------------------------------------
+    // STATUS HELPERS
+    // ------------------------------------------------------------
+
     fun isMounted(): Boolean {
         return Files.isDirectory(mountPath) &&
                 Files.list(mountPath).use { it.findAny().isPresent }
@@ -45,55 +61,97 @@ class EncryptionManager {
                 Files.list(backendPath).use { it.findAny().isPresent }
     }
 
-    fun init(cfg: EncryptionConfig): Boolean {
+    // ------------------------------------------------------------
+    // INIT (non-interactive)
+    // ------------------------------------------------------------
+
+    suspend fun init(cfg: EncryptionConfig): Boolean {
         if (cfg.password.isNullOrBlank()) return false
 
-        Files.createDirectories(backendPath)
+        // Sørg for at backend-mappen finnes
+        withContext(Dispatchers.IO) {
+            Files.createDirectories(backendPath)
+        }
 
-        val pb = ProcessBuilder(
-            "gocryptfs",
-            "-init",
-            backendPath.toString()
-        )
-            .redirectErrorStream(true)
-            .apply {
-                environment()["GOCRYPTFS_PASSWORD"] = cfg.password
+        // Lag passordfil
+        val passFile = withContext(Dispatchers.IO) {
+            Files.createTempFile("gocryptfs-pass", ".txt").also {
+                Files.writeString(it, cfg.password)
             }
+        }
 
-        val p = pb.start()
-        return p.waitFor() == 0
+        // Kjør gocryptfs -init
+        val result = runCli.runCommand(
+            executable = "gocryptfs",
+            arguments = listOf(
+                "-init",
+                "-passfile", passFile.toString(),
+                backendPath.toString()
+            ),
+            output = { line -> log.info("[gocryptfs-init] $line") }
+        )
+
+        // Slett passordfil
+        withContext(Dispatchers.IO) {
+            passFile.toFile().delete()
+        }
+
+        return result.resultCode == 0
     }
 
-    fun mount(cfg: EncryptionConfig): Boolean {
+    // ------------------------------------------------------------
+    // MOUNT (non-interactive)
+    // ------------------------------------------------------------
+
+    suspend fun mount(cfg: EncryptionConfig): Boolean {
         if (cfg.password.isNullOrBlank()) return false
 
-        Files.createDirectories(mountPath)
+        withContext(Dispatchers.IO) {
+            Files.createDirectories(backendPath)
+            Files.createDirectories(mountPath)
+        }
 
-        val pb = ProcessBuilder(
-            "gocryptfs",
-            backendPath.toString(),
-            mountPath.toString()
-        )
-            .redirectErrorStream(true)
-            .apply {
-                environment()["GOCRYPTFS_PASSWORD"] = cfg.password
+        val passFile = withContext(Dispatchers.IO) {
+            Files.createTempFile("gocryptfs-pass", ".txt").also {
+                Files.writeString(it, cfg.password)
             }
+        }
 
-        val p = pb.start()
-        return p.waitFor() == 0
-    }
-
-    fun unmount(): Boolean {
-        val p = ProcessBuilder(
-            "fusermount",
-            "-u",
-            mountPath.toString()
+        val result = runCli.runCommand(
+            executable = "gocryptfs",
+            arguments = listOf(
+                "-passfile", passFile.toString(),
+                backendPath.toString(),
+                mountPath.toString()
+            ),
+            output = { line -> log.info("[gocryptfs-mount] $line") }
         )
-            .redirectErrorStream(true)
-            .start()
 
-        return p.waitFor() == 0
+        withContext(Dispatchers.IO) {
+            passFile.toFile().delete()
+        }
+
+        return result.resultCode == 0
     }
+
+
+    // ------------------------------------------------------------
+    // UNMOUNT
+    // ------------------------------------------------------------
+
+    suspend fun unmount(): Boolean {
+        val result = runCli.runCommand(
+            executable = "fusermount",
+            arguments = listOf("-u", mountPath.toString()),
+            output = { line -> log.info("[fusermount] $line") }
+        )
+
+        return result.resultCode == 0
+    }
+
+    // ------------------------------------------------------------
+    // STATUS
+    // ------------------------------------------------------------
 
     fun getStatus(): EncryptionStatus {
         val cfg = loadConfig()
@@ -107,41 +165,61 @@ class EncryptionManager {
         )
     }
 
-    /**
-     * AUTO‑START LOGIKK
-     */
-    @PostConstruct
-    fun autoStart() {
+    // ------------------------------------------------------------
+    // AUTO INIT SEQUENCE
+    // ------------------------------------------------------------
+
+    suspend fun autoInitAsync() {
+        log.info("Starting encryption manager")
         val cfg = loadConfig()
 
+        // 1. Encryption disabled → done
         if (!cfg.enabled) {
             log.info("Encryption disabled in config")
+            state.value = EncryptionState.NOT_ENABLED
             return
         }
 
+        // 2. Start init sequence
+        state.value = EncryptionState.INITIALIZING
         log.info("Encryption enabled, checking backend...")
 
-        // 1. Init if backend missing
-        if (!backendExists()) {
-            log.warn("Encrypted backend missing → initializing new encrypted backend...")
-            if (!init(cfg)) {
-                log.error("Failed to initialize encrypted backend")
-                return
-            }
-            log.info("Encrypted backend initialized successfully")
-        }
+        try {
+            // 3. Backend missing → init required
+            if (!backendExists()) {
+                log.warn("Encrypted backend missing → initializing new encrypted backend...")
 
-        // 2. Mount if not mounted
-        if (!isMounted()) {
-            log.warn("Encrypted backend not mounted → mounting...")
-            if (!mount(cfg)) {
-                log.error("Failed to mount encrypted backend")
-                return
-            }
-            log.info("Encrypted backend mounted successfully")
-        }
+                val ok = init(cfg)
+                if (!ok) {
+                    log.error("Failed to initialize encrypted backend")
+                    state.value = EncryptionState.FAILED
+                    return
+                }
 
-        log.info("Encryption ready: encrypted backend is mounted and active")
+                log.info("Encrypted backend initialized successfully")
+            }
+
+            // 4. Backend exists but not mounted → mount required
+            if (!isMounted()) {
+                log.warn("Encrypted backend not mounted → mounting...")
+
+                val ok = mount(cfg)
+                if (!ok) {
+                    log.error("Failed to mount encrypted backend")
+                    state.value = EncryptionState.FAILED
+                    return
+                }
+
+                log.info("Encrypted backend mounted successfully")
+            }
+
+            // 5. All good
+            state.value = EncryptionState.READY
+            log.info("Encryption ready: encrypted backend is mounted and active")
+
+        } catch (e: Exception) {
+            log.error("Encryption init failed", e)
+            state.value = EncryptionState.FAILED
+        }
     }
-
 }
