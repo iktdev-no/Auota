@@ -18,4 +18,11 @@ class RunCli {
             destroyForcibly = true
         )
     }
+    suspend fun runCommand(executable: String, arguments: List<String>): ProcessResult {
+        return process(executable, *arguments.toTypedArray(),
+            stdout =  Redirect.CAPTURE,
+            stderr =  Redirect.CAPTURE,
+            destroyForcibly = true
+        )
+    }
 }

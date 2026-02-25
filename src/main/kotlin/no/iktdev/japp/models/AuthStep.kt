@@ -6,6 +6,7 @@ enum class AuthStep {
     WAIT,      // vent på at CLI skal gjøre noe, ingen input,
     DEVICE_NAME, // CLI spør etter device name
     DONE,      // ferdig, exit code 0
+    ALREADY_AUTHED, // allerede logget inn, ingen input
     CONFIRM,   // bekreftelse (y/n) – for logout eller lignende
     ERROR,     // ferdig, exit code != 0 eller feilmelding
     CANCELLED,   // avbrutt av bruker eller velger n/nei

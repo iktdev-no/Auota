@@ -1,14 +1,8 @@
 package no.iktdev.japp.controller
 
 import no.iktdev.japp.service.BackupService
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/backup")
@@ -17,22 +11,34 @@ class BackupController(
 ) {
 
     @PostMapping("/add")
-    suspend fun add() = backup.add()
+    suspend fun add(@RequestParam path: String): ResponseEntity<Any> {
+        val result = backup.add(path)
+        return ResponseEntity.ok(result)
+    }
+
+    @DeleteMapping("/remove")
+    suspend fun remove(@RequestParam path: String): ResponseEntity<Any> {
+        val result = backup.remove(path)
+        return ResponseEntity.ok(result)
+    }
 
     @GetMapping("/status")
-    suspend fun status() = backup.status()
+    suspend fun status(): ResponseEntity<Any> {
+        return ResponseEntity.ok(backup.status())
+    }
 
     @PostMapping("/scan")
-    suspend fun scan() = backup.scan()
+    suspend fun scan(): ResponseEntity<Any> {
+        return ResponseEntity.ok(backup.scan())
+    }
 
     @PostMapping("/pause")
-    suspend fun pause(@RequestParam(required = false) duration: String?) =
-        backup.pause(duration)
+    suspend fun pause(@RequestParam(required = false) duration: String?): ResponseEntity<Any> {
+        return ResponseEntity.ok(backup.pause(duration))
+    }
 
     @PostMapping("/resume")
-    suspend fun resume() = backup.resume()
-
-    @DeleteMapping
-    suspend fun remove() = backup.remove()
+    suspend fun resume(): ResponseEntity<Any> {
+        return ResponseEntity.ok(backup.resume())
+    }
 }
-

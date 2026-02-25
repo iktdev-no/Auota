@@ -47,6 +47,9 @@ class AuthService(
     private fun detectStep(output: String): AuthStep {
         val t = output.lowercase()
 
+        // DONE must win over everything else
+        if ("logged in as" in t) return AuthStep.DONE
+
         return when {
             "accept license" in t && "(yes/no)" in t ->
                 AuthStep.LICENSE
@@ -61,29 +64,24 @@ class AuthService(
             "device name" in t ->
                 AuthStep.DEVICE_NAME
 
-            // ⭐ NEW: logout confirmation
             "continue?" in t && "(y/n)" in t ->
                 AuthStep.CONFIRM
 
-            "logged in as" in t ->
-                AuthStep.DONE
-
             "invalid token" in t ||
                     "could not login" in t ||
-                    "server did not recognize the provided credentials" in t ||
+                    "server did not recognize" in t ||
                     "authentication failed" in t ->
                 AuthStep.ERROR
 
-            "cancelled" in t -> AuthStep.CANCELLED
-
-            "error" in t && "login" in t ->
-                AuthStep.ERROR
-
-
+            "cancelled" in t ->
+                AuthStep.CANCELLED
+            "already logged in as" in t ->
+                AuthStep.ALREADY_AUTHED
             else ->
                 AuthStep.UNKNOWN
         }
     }
+
 
 
     // -----------------------------
@@ -168,6 +166,30 @@ class AuthService(
         }
 
         val text = readUntilPrompt(sessionId, session)
+        // If CLI gave no output but process is finished → treat as DONE
+        if (text.isBlank() && !session.process.isAlive) {
+            val exit = session.process.exitValue()
+            sessions.remove(sessionId)
+
+            val ok = (exit == 0)
+
+            if (ok) {
+                return AuthResponse(
+                    success = true,
+                    message = completeMessage,
+                    step = AuthStep.DONE,
+                    sessionId = null
+                )
+            } else {
+                return AuthResponse(
+                    success = false,
+                    message = "CLI exited with code $exit",
+                    step = AuthStep.ERROR,
+                    sessionId = null
+                )
+            }
+        }
+
         val step = detectStep(text)
 
         if (step == AuthStep.DONE || step == AuthStep.ERROR) {
@@ -210,6 +232,30 @@ class AuthService(
             ?: return AuthResponse(false, "Session expired or not found", AuthStep.ERROR, null)
 
         val text = readUntilPrompt(sessionId, session)
+        // If CLI gave no output but process is finished → treat as DONE
+        if (text.isBlank() && !session.process.isAlive) {
+            val exit = session.process.exitValue()
+            sessions.remove(sessionId)
+
+            val ok = (exit == 0)
+
+            if (ok) {
+                return AuthResponse(
+                    success = true,
+                    message = "Logout complete",
+                    step = AuthStep.DONE,
+                    sessionId = null
+                )
+            } else {
+                return AuthResponse(
+                    success = false,
+                    message = "CLI exited with code $exit",
+                    step = AuthStep.ERROR,
+                    sessionId = null
+                )
+            }
+        }
+
         val step = detectStep(text)
 
         if (!session.process.isAlive) {

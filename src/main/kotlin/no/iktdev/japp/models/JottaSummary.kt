@@ -1,6 +1,6 @@
 package no.iktdev.japp.models
 
-data class StatusResponse(
+data class JottaSummary(
     val success: Boolean,
     val raw: String,
     val parsed: JottaStatus? = null,

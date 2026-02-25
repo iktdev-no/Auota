@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-IMAGE_NAME="japp-dev"
+IMAGE_NAME="auota-dev"
 DOCKERFILE="Dockerfile.dev"
 CHECKSUM_FILE=".dockerfile_dev_checksum"
 FLAGS_FILE=".dev_flags"
@@ -96,13 +96,15 @@ echo "[INFO] app.jar built successfully."
 echo "[INFO] Starting dev container..."
 
 docker run --rm -it \
+    --name auota-dev \
     --cap-add SYS_ADMIN \
     --device /dev/fuse \
     --security-opt apparmor=unconfined \
     -v "$(pwd)/build/libs/app.jar":/usr/share/app/app.jar \
+    -v ./docker/entrypoints/:/docker-entrypoint.d/ \
     -v japp_config:/config \
-    -v japp_crypt_backend:/crypt-backend \
-    -v japp_crypt:/crypt \
+    -v japp_crypt_backend:/dataEncrypted\
     -v japp_jottad:/root/.jottad \
     -p 8080:8080 \
     $IMAGE_NAME
+

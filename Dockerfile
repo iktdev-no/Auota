@@ -23,12 +23,12 @@ RUN curl -fsSL https://repo.jotta.us/public.gpg | gpg --dearmor -o /usr/share/ke
     rm -rf /var/lib/apt/lists/*
 
 
-RUN mkdir -p /data /crypt-backend /crypt /config /usr/share/app
+RUN mkdir -p /data /dataEncrypted /config /usr/share/app
 
-VOLUME ["/data", "/crypt-backend", "/config"]
+VOLUME ["/dataEncrypted", "/config"]
 
 COPY ./build/libs/app.jar /usr/share/app/app.jar
-
+COPY ./docker/entrypoints/* /docker-entrypoint.d/
 
 #RUN mkdir -p /docker-entrypoint.d && \
 #    printf '%s\n' \

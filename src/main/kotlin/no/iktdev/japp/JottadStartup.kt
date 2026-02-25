@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import mu.KotlinLogging
+import no.iktdev.japp.encrypt.EncryptionManager
 import no.iktdev.japp.models.EncryptionState
-import no.iktdev.japp.service.EncryptionManager
 import no.iktdev.japp.service.JottadManager
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner

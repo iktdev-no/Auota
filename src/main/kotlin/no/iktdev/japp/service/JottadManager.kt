@@ -61,6 +61,7 @@ class JottadManager {
             when (startupResult.lowercase()) {
                 "ok" -> {
                     log.info("Jottad startup OK → daemon is READY")
+                    delay(500) // Gi jottad litt tid til å bli helt klar
                     state.value = JottaDaemonState.RUNNING
                 }
                 else -> {

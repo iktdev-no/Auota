@@ -1,21 +1,25 @@
 package no.iktdev.japp.service
 
 import no.iktdev.japp.cli.JottaCli
+import no.iktdev.japp.encrypt.EncryptionManager
+import no.iktdev.japp.service.status.JottaStatusService
 import no.iktdev.japp.sse.SseHub
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 
-class StatusServiceTest {
+class JottaStatusServiceTest {
 
     private val cli = mock<JottaCli>()
     private val sse = mock<SseHub>()
     private val encryptionManager = mock<EncryptionManager>()
+    private val jottadManager = mock<JottadManager>()
 
-    val service = StatusService(
+    val service = JottaStatusService(
         cli = cli,
         sse = sse,
-        encryptionManager = encryptionManager
+        encryptionManager = encryptionManager,
+        jottadManager = jottadManager
     )
 
     @Test
