@@ -66,7 +66,7 @@ tasks.register("generateTs") {
         val cl = URLClassLoader(arrayOf(classesDir.toURI().toURL()), TsGenerator::class.java.classLoader)
 
         TsGenerator.generate(
-            packageName = "no.iktdev.japp.models",
+            packageName = "no.iktdev.auota.models",
             output = file("web/src/types/types.ts"),
             classLoader = cl
         )

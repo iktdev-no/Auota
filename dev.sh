@@ -41,10 +41,10 @@ echo "NO_MEMORY=$NO_MEMORY" > "$FLAGS_FILE"
 # 2. Wipe or keep session
 # -----------------------------
 if [ "$NO_MEMORY" = "true" ]; then
-    echo -e "${RED}[ACTION] WIPING Jottacloud session (japp_jottad volume)${RESET}"
-    docker volume rm -f japp_jottad >/dev/null 2>&1 || true
+    echo -e "${RED}[ACTION] WIPING Jottacloud session (Auota_jottad volume)${RESET}"
+    docker volume rm -f Auotajottad >/dev/null 2>&1 || true
 else
-    echo -e "${GREEN}[ACTION] Keeping Jottacloud session (japp_jottad volume persists)${RESET}"
+    echo -e "${GREEN}[ACTION] Keeping Jottacloud session (Auota_jottad volume persists)${RESET}"
 fi
 
 # -----------------------------
@@ -102,9 +102,9 @@ docker run --rm -it \
     --security-opt apparmor=unconfined \
     -v "$(pwd)/build/libs/app.jar":/usr/share/app/app.jar \
     -v ./docker/entrypoints/:/docker-entrypoint.d/ \
-    -v japp_config:/config \
-    -v japp_crypt_backend:/dataEncrypted \
-    -v japp_jottad:/root/.jottad \
+    -v auota_config:/config \
+    -v auota_crypt_backend:/dataEncrypted \
+    -v auota_jottad:/root/.jottad \
     -p 8080:8080 \
     $IMAGE_NAME
 
