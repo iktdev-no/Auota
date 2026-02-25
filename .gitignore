@@ -46,3 +46,4 @@ bin/
 .DS_Store
 
 .dockerfile_dev_checksum
+/debug/data.json
