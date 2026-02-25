@@ -13,6 +13,7 @@ import no.iktdev.japp.encrypt.info.EncryptionInfoStore
 import no.iktdev.japp.encrypt.info.EncryptionInfoValidator
 import no.iktdev.japp.encrypt.operations.*
 import no.iktdev.japp.models.*
+import no.iktdev.japp.sse.SseHub
 import org.springframework.stereotype.Service
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -20,7 +21,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 @Service
 class EncryptionManager(
-    private val runCli: RunCli
+    private val runCli: RunCli,
+    private val sseHub: SseHub
 ) {
     private val log = KotlinLogging.logger {}
 
@@ -44,7 +46,8 @@ class EncryptionManager(
         backend = encryptedDataPath,
         mount = dataPath,
         config = gocryptfsConfigPath,
-        backendInfo = backendInfoFile
+        configEncryptionInfo = infoFile,
+        backendInfo = backendInfoFile,
     )
 
     private val infoStore = EncryptionInfoStore(mapper, infoFile, backendInfoFile)
@@ -71,14 +74,22 @@ class EncryptionManager(
         paths
     )
 
-    fun enableManualOverride() {
+    fun enableManualOverride(): Boolean {
+        val currentStatus = getStatus()
+        if (!currentStatus.enabled || state.value != EncryptionState.READY) {
+            return false
+        }
         manualOverride.set(true)
         state.value = EncryptionState.MANUAL_OVERRIDE
+        sseHub.sendEnvelope("status.encryption", getStatus())
+        return true
     }
 
     fun disableManualOverride() {
         manualOverride.set(false)
         state.value = EncryptionState.NOT_INITIALIZED
+        sseHub.sendEnvelope("status.encryption", getStatus())
+
         GlobalScope.launch { autoInitAsync() }
     }
 
@@ -187,6 +198,7 @@ class EncryptionManager(
             verified = verified.value,
             enabled = cfg.enabled,
             mounted = backendChecker.isMounted(),
+            manualOverride = manualOverride.get(),
             backendExists = backendChecker.backendExists(),
             algorithm = cfg.algorithm,
             passwordSet = !cfg.password.isNullOrBlank(),

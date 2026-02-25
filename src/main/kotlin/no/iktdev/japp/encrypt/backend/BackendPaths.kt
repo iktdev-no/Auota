@@ -7,5 +7,6 @@ data class BackendPaths(
     val backend: Path,
     val mount: Path,
     val config: Path,
-    val backendInfo: Path
+    val backendInfo: Path,
+    val configEncryptionInfo: Path
 )

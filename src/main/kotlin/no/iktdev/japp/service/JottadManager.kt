@@ -76,6 +76,34 @@ class JottadManager {
         }
     }
 
+    suspend fun restart() {
+        log.warn("Restarting jottad daemon…")
+
+        try {
+            stopIfRunning()
+        } catch (e: Exception) {
+            log.error("Failed to stop jottad before restart", e)
+        }
+
+        start()
+    }
+
+    private fun stopIfRunning() {
+        val currentPid = pid ?: return
+
+        val handle = ProcessHandle.of(currentPid)
+        if (handle.isPresent && handle.get().isAlive) {
+            log.info("Stopping jottad (pid=$currentPid)")
+            handle.get().destroy()
+            Thread.sleep(300)
+        }
+
+        pid = null
+        state.value = JottaDaemonState.NOT_STARTED
+    }
+
+
+
     private suspend fun waitForStartupValue(): String {
         return withContext(Dispatchers.IO) {
 

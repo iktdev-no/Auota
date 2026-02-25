@@ -1,36 +1,29 @@
 package no.iktdev.japp.controller
 
-import no.iktdev.japp.sse.SseHub
-import no.iktdev.japp.models.LogfileResponse
+import kotlinx.coroutines.reactor.asFlux
 import no.iktdev.japp.service.LogService
 import org.springframework.http.MediaType
-import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import reactor.core.publisher.Flux
 
 @RestController
 @RequestMapping("/api/logs")
 class LogController(
-    private val logService: LogService,
-    private val sse: SseHub
+    private val logService: LogService
 ) {
 
-    @GetMapping("/file")
-    suspend fun getLogfile(): ResponseEntity<LogfileResponse> {
-        val response = logService.getLogfile()
-        return ResponseEntity.ok(response)
+    @GetMapping("/file", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
+    fun streamFile(@RequestParam path: String): Flux<String> {
+        return logService.streamFile(path).asFlux()
     }
 
-    @GetMapping("/pull")
-    suspend fun pullLogfile(): ResponseEntity<String> {
-        val content = logService.readLogfile()
-        return if (content != null) {
-            ResponseEntity.ok(content)
-        } else {
-            ResponseEntity.notFound().build()
-        }
+    @GetMapping("/jotta", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
+    suspend fun streamJotta(): Flux<String> {
+        return logService.streamJottaLog().asFlux()
     }
 
+    @GetMapping("/list", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun listLogs(): List<String> {
+        return logService.listAvailableLogs()
+    }
 }

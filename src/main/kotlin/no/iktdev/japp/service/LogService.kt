@@ -1,56 +1,93 @@
 package no.iktdev.japp.service
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import no.iktdev.japp.cli.JottaCli
 import no.iktdev.japp.models.LogfileResponse
 import org.springframework.stereotype.Service
 import java.io.File
+import java.io.RandomAccessFile
+import kotlinx.coroutines.delay
 
 @Service
 class LogService(
     private val cli: JottaCli
 ) {
 
-    suspend fun getLogfile(): LogfileResponse {
-        return when (val result = cli.run("logfile")) {
-            is JottaCli.RunResult.Success -> {
-                val path = result.output.trim()
-                LogfileResponse(true, path)
+    fun streamFile(path: String, pollMs: Long = 500L): Flow<String> = flow {
+        val file = File(path)
+        var pointer = 0L
+
+        // --- INIT: les hele eksisterende fil ---
+        if (file.exists() && file.isFile) {
+            RandomAccessFile(file, "r").use { raf ->
+                var line = raf.readLine()
+                while (line != null) {
+                    emit(line.toByteArray(Charsets.ISO_8859_1).toString(Charsets.UTF_8))
+                    line = raf.readLine()
+                }
+                pointer = raf.filePointer
             }
-            is JottaCli.RunResult.Error ->
-                LogfileResponse(false, null, "Failed to get logfile: ${result.output}")
+        }
+
+        // --- CONTINUOUS TAIL ---
+        while (true) {
+            if (!file.exists()) {
+                delay(pollMs)
+                continue
+            }
+
+            val len = file.length()
+            if (len < pointer) pointer = 0L // logrotate
+
+            if (len > pointer) {
+                RandomAccessFile(file, "r").use { raf ->
+                    raf.seek(pointer)
+                    var line = raf.readLine()
+                    while (line != null) {
+                        emit(line.toByteArray(Charsets.ISO_8859_1).toString(Charsets.UTF_8))
+                        line = raf.readLine()
+                    }
+                    pointer = raf.filePointer
+                }
+            }
+
+            delay(pollMs)
+        }
+    }.flowOn(Dispatchers.IO)
+
+    suspend fun streamJottaLog(): Flow<String> {
+        val result = cli.run("logfile")
+
+        if (result !is JottaCli.RunResult.Success) {
+            return flow { emit("Failed to execute jotta-cli logfile") }
+        }
+
+        val lines = result.output
+            .lines()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+
+        // Finn første linje som ser ut som en path
+        val path = lines.firstOrNull { line ->
+            line.startsWith("/") && File(line).exists()
+        }
+
+        return if (path != null) {
+            streamFile(path)
+        } else {
+            flow {
+                emit("Could not determine Jotta logfile path.")
+                emit("Raw output:")
+                lines.forEach { emit(it) }
+            }
         }
     }
 
-    suspend fun readLogfile(): String? {
-        val logfile = getLogfile()
-        if (!logfile.success || logfile.path == null) return null
-
-        val file = File(logfile.path)
-        if (!file.exists()) return null
-
-        return withContext(Dispatchers.IO) {
-            file.readText()
-        }
-    }
-
-    suspend fun streamLogfile(onLine: (String) -> Unit): Int {
-        val logfile = getLogfile()
-
-        if (!logfile.success || logfile.path == null) {
-            onLine("Could not determine logfile path.")
-            return -1
-        }
-
-        val file = File(logfile.path)
-        if (!file.exists()) {
-            onLine("Logfile does not exist: ${logfile.path}")
-            return -1
-        }
-
-        return cli.stream("tail", "-f", logfile.path) { line ->
-            onLine(line)
-        }.exitCode
+    fun listAvailableLogs(): List<String> {
+        // Tilpass pathene til dine systemlogger
+        return listOf("/var/log/auota/spring.log")
     }
 }

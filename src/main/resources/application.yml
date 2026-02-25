@@ -14,7 +14,8 @@ logging:
     root: INFO
     no.iktdev: DEBUG
     org.springframework: INFO
-
+  file:
+    name: /var/log/auota/spring.log
 
 
 server:

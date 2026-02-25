@@ -1,6 +1,7 @@
 package no.iktdev.japp
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -46,6 +47,7 @@ class BackupStartup(
                 .filter { it == JottaDaemonState.RUNNING }
                 .first()
 
+            delay(1000)
             log.info("BackupStartup: jottad er klar → sjekker backup-status...")
 
             val status = jottaStatusService.getStatus()

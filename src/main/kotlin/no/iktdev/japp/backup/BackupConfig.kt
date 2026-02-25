@@ -3,6 +3,7 @@ package no.iktdev.japp.backup
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import mu.KotlinLogging
+import no.iktdev.japp.models.backup.BackupItem
 import org.springframework.stereotype.Component
 import java.nio.file.Files
 import java.nio.file.Path
@@ -10,7 +11,7 @@ import java.nio.file.Paths
 
 data class BackupConfig(
     val roots: List<String> = emptyList(),
-    val excluded: List<String> = emptyList()
+    val excluded: List<BackupItem> = emptyList()
 )
 
 @Component
@@ -23,7 +24,6 @@ class BackupConfigStore {
     fun load(): BackupConfig {
         return try {
             if (!Files.exists(configFile)) {
-                log.info { "Backup config not found → using defaults" }
                 BackupConfig()
             } else {
                 mapper.readValue(configFile.toFile())

@@ -7,6 +7,7 @@ data class EncryptionStatus(
     val passwordSet: Boolean,
     val passwordIncorrect: Boolean,
     val mounted: Boolean,
+    val manualOverride: Boolean,
     val backendExists: Boolean,
     val algorithm: String?,
     val reason: String?,

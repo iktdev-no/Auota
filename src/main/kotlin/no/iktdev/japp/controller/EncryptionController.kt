@@ -44,8 +44,10 @@ class EncryptionController(
 
     @PostMapping("/override/enable")
     fun enableOverride(): ResponseEntity<EncryptionStatus> {
-        manager.enableManualOverride()
-        return ResponseEntity.ok(manager.getStatus())
+        val status = manager.enableManualOverride()
+        return if (status)
+             ResponseEntity.ok(manager.getStatus())
+        else ResponseEntity.status(HttpStatus.LOCKED).body(manager.getStatus())
     }
 
     @PostMapping("/override/disable")

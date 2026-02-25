@@ -103,7 +103,7 @@ docker run --rm -it \
     -v "$(pwd)/build/libs/app.jar":/usr/share/app/app.jar \
     -v ./docker/entrypoints/:/docker-entrypoint.d/ \
     -v japp_config:/config \
-    -v japp_crypt_backend:/dataEncrypted\
+    -v japp_crypt_backend:/dataEncrypted \
     -v japp_jottad:/root/.jottad \
     -p 8080:8080 \
     $IMAGE_NAME

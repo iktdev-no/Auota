@@ -44,7 +44,12 @@ class InitOperation(
 
         val result = runCli.runCommand(
             "gocryptfs",
-            listOf("-init", "-passfile", passFile.toString(), paths.backend.toString())
+            listOf(
+                "-init",
+                "-plaintextnames",
+                "-passfile",
+                passFile.toString(),
+                paths.backend.toString())
         )
 
         passFile.toFile().delete()
