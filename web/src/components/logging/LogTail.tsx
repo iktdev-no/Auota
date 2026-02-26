@@ -65,7 +65,7 @@ export function LogTail({ url, maxLines = 1000 }: LogTailProps) {
         <Paper
             elevation={2}
             sx={{
-                height: "400px",
+                height: "50%",
                 width: "100%",
                 overflowY: "auto",
                 fontFamily: "monospace",
