@@ -88,6 +88,15 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
         step === "DEVICE_NAME" ||
         (step === "UNKNOWN" && hasPolled);
 
+    const prepPrompt = (raw: string, step: AuthStep) => {
+        if (!raw) return "";
+        if (step === "LICENSE") {
+            return raw
+                .replace(/accept license.*$/i, "") // fjerner "accept license (yes/no):" 
+                .trim();
+        }
+        return raw;
+    }
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -95,7 +104,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
 
             <DialogContent>
                 <Typography sx={{ mb: 2, whiteSpace: "pre-line" }}>
-                    {prompt}
+                    {prepPrompt(prompt, step)}
                 </Typography>
 
                 {step === "WAIT" && (

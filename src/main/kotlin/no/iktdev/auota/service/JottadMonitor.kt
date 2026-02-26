@@ -1,12 +1,15 @@
 package no.iktdev.auota.service
 
 import mu.KotlinLogging
+import no.iktdev.auota.models.JottadStatus
+import no.iktdev.auota.sse.SseHub
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 
 @Service
 class JottadMonitor(
-    private val manager: JottadManager
+    private val manager: JottadManager,
+    private val sseHub: SseHub
 ) {
     private val log = KotlinLogging.logger {}
     private var deadCount = 0
@@ -21,7 +24,25 @@ class JottadMonitor(
             deadCount++
         }
 
+        val envilopeStatus = JottadStatus(
+            alive = alive,
+            state = manager.state.value,
+            pid = pid,
+            timestamp = System.currentTimeMillis(),
+        )
+        sseHub.sendEnvelope("status.jottad", envilopeStatus)
+
         return alive
+    }
+
+    fun getJottaDaemonStatus(): JottadStatus {
+        val alive = isRunning()
+        return JottadStatus(
+            alive = alive,
+            state = manager.state.value,
+            pid = if (alive) manager.getPid()!! else -1,
+            timestamp = System.currentTimeMillis(),
+        )
     }
 
     suspend fun checkAndRestartIfNeeded() {

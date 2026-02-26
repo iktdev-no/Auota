@@ -104,6 +104,13 @@ export interface BackupHistory {
 
 export type EncryptionState = "NOT_INITIALIZED" | "INITIALIZING" | "RESTORING" | "READY" | "FAILED" | "REJECTED" | "NOT_ENABLED" | "TEARDOWN" | "MANUAL_OVERRIDE"
 
+export interface JottadStatus {
+  alive: boolean;
+  pid: number;
+  state: JottaDaemonState;
+  timestamp: number;
+}
+
 export interface JottaStatus {
   Backup: BackupInfo | null;
   State: GlobalState | null;

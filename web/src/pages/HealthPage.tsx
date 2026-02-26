@@ -15,11 +15,11 @@ export function HealthPage() {
 
     return (
         <Grid container spacing={2} sx={{ p: 2 }}>
-            <Grid item xs={12}>
+            <Grid size={{ sm: 12 }}>
                 <Typography variant="h4">Systemstatus</Typography>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ sm: 12 }}>
                 <Card>
                     <CardContent>
                         <Typography variant="h6">Kryptering</Typography>
@@ -30,7 +30,7 @@ export function HealthPage() {
                 </Card>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ sm: 12 }}>
                 <Card>
                     <CardContent>
                         <Typography variant="h6">Autentisering</Typography>
@@ -40,7 +40,7 @@ export function HealthPage() {
             </Grid>
 
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ sm: 12 }}>
                 <Card>
                     <CardContent>
                         <Typography variant="h6">Jottad</Typography>
@@ -49,7 +49,7 @@ export function HealthPage() {
                 </Card>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ sm: 12 }}>
                 <Typography variant="caption">
                     Sist oppdatert: {new Date(health.lastUpdated).toLocaleString()}
                 </Typography>

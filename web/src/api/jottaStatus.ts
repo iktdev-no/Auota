@@ -1,4 +1,4 @@
-import type { EncryptionStatus, JottaSummary } from "../types/types";
+import type { EncryptionStatus, JottadStatus, JottaSummary } from "../types/types";
 import { apiGet } from "./client";
 
 export async function getJottaStatus(): Promise<JottaSummary> {
@@ -7,4 +7,8 @@ export async function getJottaStatus(): Promise<JottaSummary> {
 
 export async function getEncryptionStatus(): Promise<EncryptionStatus> {
     return apiGet<EncryptionStatus>("/status/encryption");
+}
+
+export async function getJottaDaemonStatus(): Promise<JottadStatus> {
+    return apiGet<JottadStatus>("/status/daemon");
 }

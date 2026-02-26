@@ -11,6 +11,7 @@ import { LogsPage } from "./pages/LogsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SseProvider } from "./sse/SseProvider";
 import { EncryptionStatusProvider } from "./status/EncryptionStatusProvider";
+import { JottaDaemonStatusProvider } from "./status/JottaDaemonStatusProvider";
 import { JottaStatusProvider } from "./status/JottaStatusProvider";
 
 interface AppLayoutProps {
@@ -56,9 +57,11 @@ export function AppProviders({ children }: PropsWithChildren) {
   return (
     <SseProvider>
       <JottaStatusProvider>
-        <EncryptionStatusProvider>
-          {children}
-        </EncryptionStatusProvider>
+        <JottaDaemonStatusProvider>
+          <EncryptionStatusProvider>
+            {children}
+          </EncryptionStatusProvider>
+        </JottaDaemonStatusProvider>
       </JottaStatusProvider>
     </SseProvider>
   )
