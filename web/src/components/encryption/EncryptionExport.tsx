@@ -1,30 +1,25 @@
 import { Button } from "@mui/material";
-import type { JSX } from "react";
+import { downloadEncryptionStore } from "../../api/encryption";
 
-export function ExportStoreButton(): JSX.Element {
-    const handleExport = async (): Promise<void> => {
-        const res = await fetch("/encryption/export/store", {
-            method: "GET"
-        });
+export function ExportStoreButton() {
+    const handleExport = async () => {
+        try {
+            const blob = await downloadEncryptionStore();
+            const url = window.URL.createObjectURL(blob);
 
-        if (!res.ok) {
-            console.error("Failed to export store");
-            return;
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "AuotaStore.key";
+            a.click();
+
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error("Export failed", err);
         }
-
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "AuotaStore.key";
-        a.click();
-
-        window.URL.revokeObjectURL(url);
     };
 
     return (
-        <Button variant="contained" color="primary" onClick={handleExport}>
+        <Button variant="contained" onClick={handleExport}>
             Export Encryption Store
         </Button>
     );

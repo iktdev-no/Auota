@@ -1,3 +1,4 @@
+# Prod.dockerfile.dev
 FROM bskjon/azuljava:21
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -27,7 +28,8 @@ RUN mkdir -p /data /dataEncrypted /config /usr/share/app
 
 VOLUME ["/dataEncrypted", "/config"]
 
-COPY ./build/libs/app.jar /usr/share/app/app.jar
+RUN mkdir -p /docker-entrypoint.d
+
 COPY ./docker/entrypoints/* /docker-entrypoint.d/
 
 #RUN mkdir -p /docker-entrypoint.d && \

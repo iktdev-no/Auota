@@ -1,5 +1,5 @@
 import type { EncryptionStatus } from "../types/types";
-import { apiDelete, apiGet, apiPost, apiPostPlaintext } from "./client";
+import { apiDelete, apiDownload, apiGet, apiPost, apiPostPlaintext } from "./client";
 
 export function getEncryptionStatus() {
     return apiGet<EncryptionStatus>("/encryption/status");
@@ -30,9 +30,11 @@ export function manualUnmount() {
     return apiPost("/encryption/unmount/manual", {});
 }
 
-export function exportEncryptionStore() {
-    return apiGet<Blob>("/encryption/export/store");
+export function downloadEncryptionStore() {
+    return apiDownload("/encryption/export/store");
 }
+
+
 
 export function importEncryptionStore(json: string) {
     return apiPost<string, EncryptionStatus>("/encryption/import/store", json);

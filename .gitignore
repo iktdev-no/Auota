@@ -45,5 +45,6 @@ bin/
 ### Mac OS ###
 .DS_Store
 
-.dockerfile_dev_checksum
+.dev/.dockerfile_dev_checksum
 /debug/data.json
+/.dev/

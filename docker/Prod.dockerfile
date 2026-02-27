@@ -1,4 +1,3 @@
-# Dockerfile.dev
 FROM bskjon/azuljava:21
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -28,20 +27,8 @@ RUN mkdir -p /data /dataEncrypted /config /usr/share/app
 
 VOLUME ["/dataEncrypted", "/config"]
 
-RUN mkdir -p /docker-entrypoint.d
-
-COPY ./docker/entrypoints/* /docker-entrypoint.d/
-
-#RUN mkdir -p /docker-entrypoint.d && \
-#    printf '%s\n' \
-#    '#!/bin/sh' \
-#    'echo "[japp] Starter jottad..."' \
-#    'jottad &' \
-#    'sleep 2' \
-#    '' \
-#    > /docker-entrypoint.d/10-start-jottad.sh && \
-#    chmod +x /docker-entrypoint.d/10-start-jottad.sh
-
+COPY ../build/libs/app.jar /usr/share/app/app.jar
+#COPY ./docker/entrypoints/* /docker-entrypoint.d/
 
 ENV BACKUP_ROOT=/data
 

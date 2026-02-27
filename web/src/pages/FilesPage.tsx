@@ -42,9 +42,6 @@ export default function FilesPage() {
     const [menuPos, setMenuPos] = useState<{ mouseX: number; mouseY: number } | null>(null)
     const [menuFile, setMenuFile] = useState<IFile | null>(null)
 
-    const [confirmOpen, setConfirmOpen] = useState(false)
-    const [confirmTarget, setConfirmTarget] = useState<IFile | null>(null)
-
     /* ───── Data loading tied to URL ───── */
 
     const load = useCallback(

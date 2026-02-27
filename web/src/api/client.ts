@@ -46,6 +46,20 @@ export async function apiGet<T>(
     return res.json()
 }
 
+export async function apiDownload(path: string): Promise<Blob> {
+    const res = await fetch(`/api${path}`, {
+        method: "GET"
+    });
+
+    if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`Download failed: ${res.status} ${text}`);
+    }
+
+    return await res.blob();
+}
+
+
 export async function apiPost<TRequest, TResponse>(
     path: string,
     body: TRequest
