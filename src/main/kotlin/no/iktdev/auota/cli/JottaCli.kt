@@ -10,10 +10,10 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 
 @Component
-class JottaCli {
+class JottaCli: JottaCliClient {
     private val executable = "jotta-cli"
 
-    suspend fun run(
+    override suspend fun run(
         vararg args: String,
     ): RunResult {
         val output = mutableListOf<String>()
@@ -27,7 +27,7 @@ class JottaCli {
         }
     }
 
-    suspend fun stream(
+    override suspend fun stream(
         vararg args: String,
         onLine: (String) -> Unit
     ): StreamResult {
@@ -54,7 +54,7 @@ class JottaCli {
      * Starter en interaktiv prosess og returnerer stdin/stdout + prosess.
      * Dette brukes for login/logout.
      */
-    fun startInteractive(vararg args: String): InteractiveProcess {
+    override fun startInteractive(vararg args: String): InteractiveProcess {
         val process = ProcessBuilder(executable, *args)
             .redirectErrorStream(true)
             .start()

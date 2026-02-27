@@ -1,7 +1,8 @@
 package no.iktdev.auota.service
 
 import no.iktdev.auota.backup.BackupConfigStore
-import no.iktdev.auota.encrypt.EncryptionManager
+import no.iktdev.auota.crypt.encrypt.EncryptionManager
+import no.iktdev.auota.models.crypt.EncryptionState
 import no.iktdev.auota.models.file.*
 import org.springframework.stereotype.Service
 import java.io.File
@@ -32,6 +33,52 @@ class ExplorerService(
         "/var",
         "/usr"
     )
+
+    fun listRoots(): List<IFile> {
+        val success = listOf(EncryptionState.READY, EncryptionState.MANUAL_OVERRIDE)
+
+        val cfg = backupConfigStore.load()
+
+        val roots = if(encryption.state.value in success) {
+            listOf(encryption.encryptedDataPath.toFile())
+        } else {
+            listOf(encryption.dataPath.toFile())
+        }
+        return roots.map { it -> it.toFileInfo(cfg) }
+    }
+
+
+
+    fun listAtUploadFolder(path: String): List<IFile> {
+        val success = listOf(EncryptionState.READY, EncryptionState.MANUAL_OVERRIDE)
+
+        val baseFolder = if (encryption.state.value in success) {
+            encryption.encryptedDataPath
+        } else {
+            encryption.dataPath
+        }
+
+        val basePath = baseFolder.toFile().toPath().toRealPath() // canonical
+        val targetPath = basePath.resolve(path).normalize().toRealPath()
+
+        // 🔒 Sikkerhetssjekk – må være innenfor baseFolder
+        if (!targetPath.startsWith(basePath)) {
+            println("Security warning: Attempted access outside baseFolder: $path")
+            return emptyList()
+        }
+
+        val targetDir = targetPath.toFile()
+        if (!targetDir.exists() || !targetDir.isDirectory) {
+            return emptyList()
+        }
+
+        val cfg = backupConfigStore.load()
+
+        return targetDir.listFiles()
+            ?.map { it.toFileInfo(cfg) }
+            ?: emptyList()
+    }
+
 
     fun listAt(path: String): List<IFile> {
         val dir = File(path)

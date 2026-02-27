@@ -23,7 +23,10 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
     // JSON
-    implementation("com.google.code.gson:gson:2.8.9")
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
+    implementation("com.squareup.moshi:moshi:1.15.0")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
     // Kotlin
@@ -49,6 +52,8 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 
 }
 

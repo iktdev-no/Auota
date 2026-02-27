@@ -1,0 +1,10 @@
+frontend_dir: web
+backend_jar: build/libs/app.jar
+docker:
+  dockerfile: /docker/Prod.dockerfile
+  image_name: auota
+  tag: latest
+required_files:
+  - /docker/Prod.dockerfile
+  - src/main
+  - web/package.json

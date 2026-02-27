@@ -1,6 +1,6 @@
-package no.iktdev.auota.encrypt.operations
+package no.iktdev.auota.crypt.encrypt.operations
 
-import no.iktdev.auota.encrypt.backend.BackendPaths
+import no.iktdev.auota.crypt.backend.BackendPaths
 import no.iktdev.auota.models.GocryptfsConfigExport
 import no.iktdev.auota.sha256Hex
 import java.nio.file.Files

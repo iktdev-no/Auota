@@ -1,6 +1,6 @@
 package no.iktdev.auota.controller
 
-import no.iktdev.auota.encrypt.EncryptionManager
+import no.iktdev.auota.crypt.encrypt.EncryptionManager
 import no.iktdev.auota.models.EncryptionStatus
 import no.iktdev.auota.models.JottaSummary
 import no.iktdev.auota.models.JottadStatus

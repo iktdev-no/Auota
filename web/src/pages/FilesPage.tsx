@@ -51,7 +51,7 @@ export default function FilesPage() {
                 setError(null)
 
                 const endpoint =
-                    path === "/" ? "/files/roots" : `/files/explore?path=${encodeURIComponent(path)}`
+                    path === "/" ? "/files/roots" : `/files/upload?path=${encodeURIComponent(path)}`
                 const data = await apiGet<IFile[]>(endpoint)
                 setFiles(data)
 

@@ -1,4 +1,4 @@
-package no.iktdev.auota.encrypt.info
+package no.iktdev.auota.crypt.info
 
 import mu.KotlinLogging
 

@@ -2,6 +2,7 @@ package no.iktdev.ts
 
 import java.io.File
 import kotlin.reflect.KClass
+import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
 
@@ -113,19 +114,26 @@ object TsGenerator {
         return "export type ${cls.simpleName} = $values\n"
     }
 
-    private fun sealedSubtypeToTs(cls: KClass<*>): String {
+    private fun sealedSubtypeToTs(cls: KClass<*>, rules: Rules = Rules.default): String {
+        println("Generating TS interface for: ${cls.simpleName}")
+
+        // Hent override fra rules via klassens navn
+        val typeLiteral = rules.getOverride(cls.java) ?: cls.simpleName
+
+        val typeLine = "  type: \"$typeLiteral\";"
+
         val props = cls.memberProperties
-            .filter { it.name != "type" } // ← FIX: unngå duplisering
+            .filter { it.name != "type" }
             .joinToString("\n") { prop ->
                 val tsType = kotlinToTsType(prop.returnType.toString())
                 "  ${prop.name}: $tsType;"
             }
 
-        val propsBlock = if (props.isBlank()) "" else "\n$props"
+        val propsBlock = listOf(typeLine, props).joinToString("\n")
 
         return buildString {
             appendLine("export interface ${cls.simpleName} {")
-            appendLine("  type: \"${cls.simpleName}\";$propsBlock")
+            appendLine(propsBlock)
             appendLine("}")
         }
     }

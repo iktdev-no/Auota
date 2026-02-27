@@ -1,7 +1,7 @@
 package no.iktdev.auota.service
 
 import kotlinx.coroutines.flow.MutableStateFlow
-import no.iktdev.auota.encrypt.EncryptionManager
+import no.iktdev.auota.crypt.encrypt.EncryptionManager
 import no.iktdev.auota.models.AuthStatus
 import no.iktdev.auota.models.SystemHealth
 import no.iktdev.auota.service.status.JottaStatusService

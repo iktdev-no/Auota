@@ -1,6 +1,10 @@
 // AUTO-GENERATED. DO NOT EDIT.
 // Source: no.iktdev.auota.models
 
+export type DecryptionState = "NOT_INITIALIZED" | "INITIALIZING" | "RESTORING" | "READY" | "FAILED" | "REJECTED" | "NOT_ENABLED" | "TEARDOWN" | "MANUAL_OVERRIDE"
+
+export type EncryptionState = "NOT_INITIALIZED" | "INITIALIZING" | "RESTORING" | "READY" | "FAILED" | "REJECTED" | "NOT_ENABLED" | "TEARDOWN" | "MANUAL_OVERRIDE"
+
 export interface BackupInfo {
   State: BackupState | null;
 }
@@ -70,6 +74,39 @@ export interface AvatarInfo {
   Initials: string | null;
 }
 
+export type JottaFsItem = JottaFile | JottaFolder
+
+export interface JottaFileAction {
+  id: JottaFileActionType;
+  requiresConfirmation: boolean;
+  title: string;
+}
+
+export type JottaFileActionType = "Download" | "Open"
+
+export interface JottaFs {
+  Files: JottaFile[] | null;
+  Folders: JottaFolder[] | null;
+}
+
+export interface JottaFile {
+  type: "File";
+  Checksum: string;
+  Modified: number;
+  Name: string;
+  Path: string;
+  Size: number;
+  actions: JottaFileAction[];
+  extension: string;
+}
+
+export interface JottaFolder {
+  type: "Folder";
+  Name: string;
+  Path: string | null;
+  actions: JottaFileAction[];
+}
+
 export interface BackupState {
   Enabled: EnabledBackup | null;
 }
@@ -101,8 +138,6 @@ export interface BackupHistory {
   Total: Record<string, any> | null;
   Upload: UploadHistory | null;
 }
-
-export type EncryptionState = "NOT_INITIALIZED" | "INITIALIZING" | "RESTORING" | "READY" | "FAILED" | "REJECTED" | "NOT_ENABLED" | "TEARDOWN" | "MANUAL_OVERRIDE"
 
 export interface JottadStatus {
   alive: boolean;

@@ -1,4 +1,4 @@
-package no.iktdev.auota.encrypt.backend
+package no.iktdev.auota.crypt.backend
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

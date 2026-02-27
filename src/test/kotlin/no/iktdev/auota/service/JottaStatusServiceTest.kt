@@ -1,7 +1,7 @@
 package no.iktdev.auota.service
 
 import no.iktdev.auota.cli.JottaCli
-import no.iktdev.auota.encrypt.EncryptionManager
+import no.iktdev.auota.crypt.encrypt.EncryptionManager
 import no.iktdev.auota.service.status.JottaStatusService
 import no.iktdev.auota.sse.SseHub
 import org.junit.jupiter.api.Assertions.*

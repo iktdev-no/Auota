@@ -92,7 +92,7 @@ export function EncryptionCard() {
 
                 <Divider sx={{ my: 2 }} />
                 <EncryptionOverrideToggleCard />
-                {status.state === "MANUAL_OVERRIDE" && (
+                {status.manualOverride && (
                     <EncryptionManualMountCard />
                 )}
                 <Divider sx={{ my: 2 }} />

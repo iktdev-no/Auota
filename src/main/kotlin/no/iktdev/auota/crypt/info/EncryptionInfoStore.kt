@@ -1,4 +1,4 @@
-package no.iktdev.auota.encrypt.info
+package no.iktdev.auota.crypt.info
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.nio.file.Files
@@ -13,7 +13,10 @@ class EncryptionInfoStore(
     fun loadBackendInfo(): EncryptionInfo? = read(backendInfoPath)
 
     fun saveConfigInfo(info: EncryptionInfo) = write(configInfoPath, info)
-    fun saveBackendInfo(info: EncryptionInfo) = write(backendInfoPath, info)
+    fun saveBackendInfo(info: EncryptionInfo) {
+    //disabled for now
+    //write(backendInfoPath, info)
+    }
 
     private fun read(path: Path): EncryptionInfo? =
         if (Files.exists(path)) mapper.readValue(path.toFile(), EncryptionInfo::class.java) else null

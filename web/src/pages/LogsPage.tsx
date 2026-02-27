@@ -15,7 +15,14 @@ export function LogsPage() {
     }, []);
 
     return (
-        <Box p={2}>
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",    // fyller main-container
+                p: 2,
+            }}
+        >
             <Typography variant="h6" gutterBottom>
                 Log Viewer
             </Typography>
@@ -32,7 +39,22 @@ export function LogsPage() {
             </Select>
 
             {selectedFile && (
-                <LogTail url={selectedFile === "jotta" ? "/api/logs/jotta" : `/api/logs/file?path=${encodeURIComponent(selectedFile)}`} />
+                <Box
+                    sx={{
+                        flexGrow: 1,         // tar all tilgjengelig plass
+                        display: "flex",
+                        flexDirection: "column",
+                        overflow: "hidden",  // vi lar LogTail håndtere sin scroll
+                    }}
+                >
+                    <LogTail
+                        url={
+                            selectedFile === "jotta"
+                                ? "/api/logs/jotta"
+                                : `/api/logs/file?path=${encodeURIComponent(selectedFile)}`
+                        }
+                    />
+                </Box>
             )}
         </Box>
     );

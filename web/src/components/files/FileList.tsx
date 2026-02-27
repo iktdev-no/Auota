@@ -1,18 +1,15 @@
 import CloudOffIcon from '@mui/icons-material/CloudOff'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
-import DataObjectIcon from '@mui/icons-material/DataObject'
 import { default as Folder } from "@mui/icons-material/Folder"
 import ForwardIcon from '@mui/icons-material/Forward'
-import ImageIcon from '@mui/icons-material/Image'
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile"
-import MovieIcon from '@mui/icons-material/Movie'
 import RemoveModeratorIcon from '@mui/icons-material/RemoveModerator'
 import ShieldIcon from '@mui/icons-material/Shield'
-import SubtitlesIcon from '@mui/icons-material/Subtitles'
 import { Box, List, ListItemButton, ListItemIcon, ListItemText } from "@mui/material"
 import type { JSX, PropsWithChildren } from 'react'
 import type { IFile } from '../../types/types'
 import { normalDate } from '../../utils'
+import { getFileColor, getFileIcon } from './FileUtils'
 
 
 export interface FileListProps {
@@ -22,12 +19,6 @@ export interface FileListProps {
 }
 
 export function FileList({ files, onOpenFolder, onContextMenu }: FileListProps) {
-    const videoExtensions = ["mp4", "mkv", "mov", "avi", "webm", "ts", "m2ts"];
-    const subtitleExtensions = ["srt", "ass", "vtt", "smi"];
-    const pictureExtensions = [
-        "webp", "png", "jpeg", "jpg",
-        "avif", "heic", "heif", "bmp", "tiff", "tif"
-    ]
 
     const getMainIconColor = (file: IFile): string => {
         if (file.type === "Folder") {
@@ -41,20 +32,7 @@ export function FileList({ files, onOpenFolder, onContextMenu }: FileListProps) 
             return "#fbc02d";
         } else if (file.type === "File") {
             const ext = file.extension.toLowerCase()
-            if (videoExtensions.includes(ext)) {
-                return "#42a5f5";
-            }
-            if (subtitleExtensions.includes(ext)) {
-                return "#66bb6a"
-            }
-
-            if (pictureExtensions.includes(ext)) {
-                return "#26a69a"
-            }
-
-            if (ext === "json") {
-                return "#ab47bc"
-            }
+            return getFileColor(ext)
         }
         return "#bdbdbd";
     }
@@ -67,23 +45,8 @@ export function FileList({ files, onOpenFolder, onContextMenu }: FileListProps) 
             }} />
         } else if (file.type === 'File') {
             const ext = file.extension.toLowerCase()
-            if (videoExtensions.includes(ext)) {
-                return <MovieIcon fontSize='large' key="main" sx={{ color: color }} />
-            }
-
-            if (subtitleExtensions.includes(ext)) {
-                return <SubtitlesIcon fontSize='large' key="main" sx={{ color: color }} />
-            }
-
-            if (pictureExtensions.includes(ext)) {
-                return <ImageIcon fontSize='large' key="main" sx={{ color: color }} />
-            }
-
-            if (ext === "json") {
-                return <DataObjectIcon fontSize='large' key="main" sx={{ color: color }} />
-            }
+            return getFileIcon(ext, color)
         }
-
         return <InsertDriveFileIcon fontSize='large' key="main" sx={{ color: color }} />
     }
 

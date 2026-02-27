@@ -39,4 +39,16 @@ class OperationsService(
                 OperationResponse(false, "Resume failed: ${result.output}", result.output)
         }
     }
+
+    suspend fun scan(path: String?): OperationResponse {
+        val scanArguments = if (path.isNullOrEmpty()) emptyList() else listOf(path)
+
+        return when (val result = cli.run("scan", *scanArguments.toTypedArray())) {
+            is JottaCli.RunResult.Success ->
+                OperationResponse(true, "Scan requested successfully", result.output)
+
+            is JottaCli.RunResult.Error ->
+                OperationResponse(false, "Scan failed: ${result.output}", result.output)
+        }
+    }
 }

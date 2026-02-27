@@ -1,7 +1,7 @@
-package no.iktdev.auota.encrypt.operations
+package no.iktdev.auota.crypt.encrypt.operations
 
 import no.iktdev.auota.cli.RunCli
-import no.iktdev.auota.encrypt.backend.BackendPaths
+import no.iktdev.auota.crypt.backend.BackendPaths
 
 class TeardownOperation(
     private val runCli: RunCli,

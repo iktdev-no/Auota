@@ -5,8 +5,8 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
-import no.iktdev.auota.encrypt.EncryptionManager
-import no.iktdev.auota.models.EncryptionState
+import no.iktdev.auota.crypt.encrypt.EncryptionManager
+import no.iktdev.auota.models.crypt.EncryptionState
 import no.iktdev.auota.service.JottadManager
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner

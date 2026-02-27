@@ -5,8 +5,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
-import no.iktdev.auota.encrypt.EncryptionManager
-import no.iktdev.auota.models.EncryptionState
+import no.iktdev.auota.crypt.encrypt.EncryptionManager
+import no.iktdev.auota.models.crypt.EncryptionState
 import no.iktdev.auota.models.EncryptionStatus
 import no.iktdev.auota.sse.SseHub
 import org.springframework.stereotype.Service

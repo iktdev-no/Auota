@@ -1,5 +1,7 @@
 package no.iktdev.auota.models
 
+import no.iktdev.auota.models.crypt.EncryptionState
+
 data class SystemHealth(
     val encryption: EncryptionState,
     val auth: AuthStatus,

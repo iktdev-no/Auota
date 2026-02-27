@@ -1,4 +1,4 @@
-package no.iktdev.auota.models
+package no.iktdev.auota.models.crypt
 
 enum class EncryptionState {
     NOT_INITIALIZED,   // Ingen backend, ingen config, ingen mount

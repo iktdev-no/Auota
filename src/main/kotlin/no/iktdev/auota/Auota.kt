@@ -33,4 +33,6 @@ class WebConfig : WebFluxConfigurer {
     }
 }
 
-
+@Target(AnnotationTarget.PROPERTY)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class TSGenOverride(val literal: String)

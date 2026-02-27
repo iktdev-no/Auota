@@ -3,7 +3,7 @@ package no.iktdev.auota
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
-import no.iktdev.auota.encrypt.EncryptionManager
+import no.iktdev.auota.crypt.encrypt.EncryptionManager
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.stereotype.Component

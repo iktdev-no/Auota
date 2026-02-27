@@ -65,15 +65,18 @@ export function LogTail({ url, maxLines = 1000 }: LogTailProps) {
         <Paper
             elevation={2}
             sx={{
-                height: "50%",
+                flexGrow: 1,          // fyller tilgjengelig høyde
                 width: "100%",
-                overflowY: "auto",
+                overflowY: "auto",    // scroll hvis innholdet vokser
                 fontFamily: "monospace",
                 p: 1,
                 position: "relative",
+                display: "flex",
+                flexDirection: "column",
             }}
             ref={containerRef}
         >
+            {/* Sticky header */}
             <Box
                 sx={{
                     position: "sticky",
@@ -97,21 +100,22 @@ export function LogTail({ url, maxLines = 1000 }: LogTailProps) {
                 </Box>
             </Box>
 
-            {error && <Typography color="error">{error}</Typography>}
-
-            {lines.map((line, idx) => (
-                <Typography
-                    key={idx}
-                    sx={{
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word",
-                        color: getLineColor(line),
-                    }}
-                    variant="body2"
-                >
-                    {line}
-                </Typography>
-            ))}
+            <Box sx={{ flexGrow: 1, overflowY: "auto" }} ref={containerRef}>
+                {error && <Typography color="error">{error}</Typography>}
+                {lines.map((line, idx) => (
+                    <Typography
+                        key={idx}
+                        sx={{
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                            color: getLineColor(line),
+                        }}
+                        variant="body2"
+                    >
+                        {line}
+                    </Typography>
+                ))}
+            </Box>
         </Paper>
     );
 }

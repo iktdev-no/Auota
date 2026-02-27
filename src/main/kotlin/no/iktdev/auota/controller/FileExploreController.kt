@@ -17,17 +17,17 @@ class FileExploreController(
     @GetMapping("/roots")
     fun roots(): ResponseEntity<List<IFile>> {
         return ResponseEntity.ok(
-            explorer.listAt("/")
+            explorer.listRoots()
         )
     }
 
-    @GetMapping("/explore")
+    @GetMapping("/upload")
     fun list(@RequestParam path: String): ResponseEntity<List<IFile>> {
         val file = File(path)
         if (!file.exists() || file.isFile) {
             return ResponseEntity.notFound().build()
         }
-        val files = explorer.listAt(path)
+        val files = explorer.listAtUploadFolder(path)
         return ResponseEntity.ok(files)
     }
 

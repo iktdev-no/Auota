@@ -2,11 +2,14 @@ package no.iktdev.auota.controller
 
 import no.iktdev.auota.models.OperationRequest
 import no.iktdev.auota.models.OperationResponse
+import no.iktdev.auota.models.jottaFs.JottaFs
 import no.iktdev.auota.service.OperationsService
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -24,6 +27,12 @@ class OperationsController(
     @PostMapping("/resume")
     suspend fun resume(): ResponseEntity<OperationResponse> {
         val response = operations.resume()
+        return ResponseEntity.ok(response)
+    }
+
+    @GetMapping("/scan")
+    suspend fun list(@RequestParam path: String?): ResponseEntity<OperationResponse> {
+        val response = operations.scan(path)
         return ResponseEntity.ok(response)
     }
 }

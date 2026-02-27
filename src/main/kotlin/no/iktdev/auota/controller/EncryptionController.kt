@@ -5,7 +5,7 @@ import com.google.gson.JsonSyntaxException
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
-import no.iktdev.auota.encrypt.EncryptionManager
+import no.iktdev.auota.crypt.encrypt.EncryptionManager
 import no.iktdev.auota.models.EncryptionStatus
 import no.iktdev.auota.models.GocryptfsConfigExport
 import org.springframework.http.HttpStatus
