@@ -1,4 +1,4 @@
-package no.iktdev.auota.crypt.encrypt.operations
+package no.iktdev.auota.crypt.common
 
 import no.iktdev.auota.crypt.backend.BackendPaths
 import no.iktdev.auota.models.GocryptfsConfigExport

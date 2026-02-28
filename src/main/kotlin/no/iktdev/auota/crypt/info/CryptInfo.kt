@@ -1,6 +1,6 @@
 package no.iktdev.auota.crypt.info
 
-data class EncryptionInfo(
+data class CryptInfo(
     val backendId: String,
     val created: Long,
     val cryptHash: String,

@@ -1,38 +1,39 @@
-package no.iktdev.auota.crypt.encrypt.operations
+package no.iktdev.auota.crypt.common
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import mu.KLogger
 import mu.KotlinLogging
 import no.iktdev.auota.crypt.backend.BackendPaths
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.Comparator
 
-class VerifyOperation(private val paths: BackendPaths) {
+abstract class VerifyOperationBase(
+    protected val paths: BackendPaths
+) {
 
-    private val log = KotlinLogging.logger {}
+    abstract val log: KLogger
 
-    /**
-     * Verifiserer at kryptering fungerer på reverse-mount:
-     * - skriver til backend (plaintext)
-     * - sjekker at mount (encrypted view) viser kryptert innhold
-     */
+    /** Subclass bestemmer testfilens navn og innhold */
+    protected abstract fun prepareTestFile(): Pair<Path, String>
+
+    /** Om mount er forventet read-only, suppress script warnings */
+    protected open val suppressWritable: Boolean = false
+
+    /** Verifiserer at kryptering fungerer */
     suspend fun verify(): Boolean {
-        val testContent = "AUOTA_TEST_${System.currentTimeMillis()}"
-        val backendTestFile = paths.backend.resolve("auota-test.txt")
-        val mountViewFile = paths.mount.resolve("auota-test.txt")
+        val (backendTestFile, testContent) = prepareTestFile()
+        val mountViewFile = paths.mount.resolve(backendTestFile.fileName)
 
         log.info { "Starter verifisering av mount" }
         log.info { "Backend (writeable) : ${paths.backend}" }
-        log.info { "Mount (read-only)  : ${paths.mount}" }
+        log.info { "Mount (view)        : ${paths.mount}" }
 
         // -------------------------------------------------
-        // 1️⃣ Skriv testfil til backend (plaintext)
+        // 1️⃣ Skriv testfil til backend
         // -------------------------------------------------
         try {
-            withContext(Dispatchers.IO) {
-                Files.writeString(backendTestFile, testContent)
-            }
+            withContext(Dispatchers.IO) { Files.writeString(backendTestFile, testContent) }
             log.info { "✅ Testfil skrevet til backend: $backendTestFile" }
         } catch (e: Exception) {
             log.error(e) { "❌ Klarte ikke å skrive testfil til backend" }
@@ -40,7 +41,7 @@ class VerifyOperation(private val paths: BackendPaths) {
         }
 
         // -------------------------------------------------
-        // 2️⃣ Sjekk at filen finnes kryptert i mount
+        // 2️⃣ Les mount view
         // -------------------------------------------------
         val mountBytes = try {
             withContext(Dispatchers.IO) { Files.readAllBytes(mountViewFile) }
@@ -52,7 +53,6 @@ class VerifyOperation(private val paths: BackendPaths) {
         val containsPlaintext = String(mountBytes).contains(testContent)
         if (containsPlaintext) {
             log.error { "❌ Mount inneholder plaintext → kryptering feilet" }
-            return false
         } else {
             log.info { "✅ Fil vises kryptert i mount: $mountViewFile" }
         }
@@ -67,24 +67,21 @@ class VerifyOperation(private val paths: BackendPaths) {
             "unknown"
         }
         val looksLikeFuse = storeType.contains("fuse")
-        log.info { "FileStore-type for mount: $storeType → ser ut som FUSE? $looksLikeFuse" }
+        log.info { "FileStore-type for mount: $storeType (FUSE=${looksLikeFuse})" }
 
         // -------------------------------------------------
         // 4️⃣ Sjekk /proc/self/mounts
         // -------------------------------------------------
         val mountEntry = try {
             Files.readAllLines(Path.of("/proc/self/mounts"))
-                .firstOrNull { line -> line.split(" ").getOrNull(1) == paths.mount.toAbsolutePath().toString() }
+                .firstOrNull { it.split(" ").getOrNull(1) == paths.mount.toAbsolutePath().toString() }
         } catch (e: Exception) {
             log.warn(e) { "Kunne ikke lese /proc/self/mounts" }
             null
         }
 
-        if (mountEntry != null) {
-            log.info { "Fant mount entry i /proc/self/mounts: $mountEntry" }
-        } else {
-            log.warn { "Fant IKKE mount entry i /proc/self/mounts for mount" }
-        }
+        if (mountEntry != null) log.info { "Fant mount entry i /proc/self/mounts: $mountEntry" }
+        else log.warn { "Fant IKKE mount entry i /proc/self/mounts for mount" }
 
         // -------------------------------------------------
         // 5️⃣ Rydd opp testfil
@@ -100,11 +97,8 @@ class VerifyOperation(private val paths: BackendPaths) {
         // 6️⃣ Konklusjon
         // -------------------------------------------------
         val ok = !containsPlaintext && mountEntry != null
-        if (ok) {
-            log.info { "🟢 Verifisering OK: Kryptert mount fungerer som forventet" }
-        } else {
-            log.error { "🔴 Verifisering FEILET: Se logg for detaljer" }
-        }
+        if (ok) log.info { "🟢 Verifisering OK: Kryptert mount fungerer som forventet" }
+        else log.error { "🔴 Verifisering FEILET: Se logg for detaljer" }
 
         return ok
     }

@@ -40,9 +40,9 @@ class ExplorerService(
         val cfg = backupConfigStore.load()
 
         val roots = if(encryption.state.value in success) {
-            listOf(encryption.encryptedDataPath.toFile())
+            listOf(encryption.paths.mount.toFile())
         } else {
-            listOf(encryption.dataPath.toFile())
+            listOf(encryption.paths.backend.toFile())
         }
         return roots.map { it -> it.toFileInfo(cfg) }
     }
@@ -53,9 +53,9 @@ class ExplorerService(
         val success = listOf(EncryptionState.READY, EncryptionState.MANUAL_OVERRIDE)
 
         val baseFolder = if (encryption.state.value in success) {
-            encryption.encryptedDataPath
+            encryption.paths.mount
         } else {
-            encryption.dataPath
+            encryption.paths.backend
         }
 
         val basePath = baseFolder.toFile().toPath().toRealPath() // canonical
@@ -119,8 +119,8 @@ class ExplorerService(
             }
         }
 
-        val isEncrypted = filePath.startsWith(encryption.encryptedDataPath)
-        val isBackend = filePath.startsWith(encryption.dataPath)
+        val isEncrypted = filePath.startsWith(encryption.paths.mount)
+        val isBackend = filePath.startsWith(encryption.paths.backend)
 
         val fileActions = buildActions(
             isIncluded = isIncluded,
@@ -167,10 +167,10 @@ class ExplorerService(
         if (p.toString() == "/") return false
 
         // 3) Tillat backend og alt under
-        if (p.startsWith(encryption.encryptedDataPath)) return true
+        if (p.startsWith(encryption.paths.mount)) return true
 
         // 4) Tillat mount og alt under, men ikke selve mount-root
-        if (p.startsWith(encryption.dataPath) && p != encryption.dataPath) return true
+        if (p.startsWith(encryption.paths.backend) && p != encryption.paths.backend) return true
 
         // 5) Alt annet er ulovlig
         return false

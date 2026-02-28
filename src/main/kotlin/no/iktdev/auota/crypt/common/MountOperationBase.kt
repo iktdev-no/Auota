@@ -1,7 +1,8 @@
-package no.iktdev.auota.crypt.encrypt.operations
+package no.iktdev.auota.crypt.common
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import mu.KLogger
 import mu.KotlinLogging
 import no.iktdev.auota.cli.RunCli
 import no.iktdev.auota.crypt.backend.BackendPaths
@@ -10,22 +11,20 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-class MountOperation(
-    private val runCli: RunCli,
-    private val paths: BackendPaths,
-    private val configFile: Path
+abstract class MountOperationBase(
+    protected val runCli: RunCli,
+    protected val paths: BackendPaths,
+    protected val configFile: Path
 ) {
 
-    private val log = KotlinLogging.logger {}
+    abstract val log: KLogger
 
-    /** Precheck – aldri kritisk, bare info */
+    /** Precheck – aldri kritisk, kun info */
     suspend fun precheckMount(path: Path) = withContext(Dispatchers.IO) {
         val absPath = path.toAbsolutePath().toString()
         log.info { "Precheck mount: $absPath" }
 
-        val exists = Files.exists(path)
-        log.info { "Mount-folder eksisterer: $exists" }
-
+        log.info { "Mount-folder eksisterer: ${Files.exists(path)}" }
         val storeType = try { Files.getFileStore(path).type().lowercase() } catch (_: Exception) { "unknown" }
         log.info { "FileStore type: $storeType" }
 
@@ -33,12 +32,10 @@ class MountOperation(
             Files.readAllLines(Paths.get("/proc/self/mounts")).any { it.split(" ").getOrNull(1) == absPath }
         } catch (_: Exception) { false }
         log.info { "Mount entry funnet: $mounted" }
-
-        // Skrivetest suppresset under precheck
     }
 
     /** Full verify etter mount – kritiske sjekker, skrivetest suppresset ved forventet read-only */
-    private suspend fun verifyMount(path: Path, suppressWritable: Boolean = false): Boolean = withContext(Dispatchers.IO) {
+    suspend fun verifyMount(path: Path, suppressWritable: Boolean = false): Boolean = withContext(Dispatchers.IO) {
         val absPath = path.toAbsolutePath().toString()
         log.info { "Verifisering mount: $absPath" }
 
@@ -63,12 +60,12 @@ class MountOperation(
             false
         }
 
-        // Skrivetest – kun info, suppresset når read-only
+        // Skrivetest – kun info
         val writableOk = try {
             val testFile = path.resolve(".mount-test-${System.currentTimeMillis()}")
             Files.writeString(testFile, "test")
             Files.deleteIfExists(testFile)
-            log.info { "Skrivetest OK" }
+            if (!suppressWritable) log.info { "Skrivetest OK" }
             true
         } catch (e: Exception) {
             if (!suppressWritable) log.info { "Skrivetest feilet – mulig read-only: ${e.message}" }
@@ -77,14 +74,13 @@ class MountOperation(
 
         val criticalOk = fileStoreOk && mountsOk
         if (!criticalOk) log.error { "Kritisk mount-verifisering feilet" }
-
         criticalOk
     }
 
-    /** Mount backend med gocryptfs reverse */
-    suspend fun mount(cfg: EncryptionConfig): Boolean {
+    /** Mount backend med gocryptfs – subclass bestemmer args */
+    suspend fun mount(cfg: EncryptionConfig, suppressWritable: Boolean = false): Boolean {
         log.info { "Starter mount-prosess..." }
-        log.info { "Backend: ${paths.backend}, Encrypted: ${paths.mount}" }
+        log.info { "Backend: ${paths.backend}, Mountpoint: ${paths.mount}" }
 
         if (cfg.password.isNullOrBlank()) {
             log.error { "Passord mangler" }
@@ -114,15 +110,9 @@ class MountOperation(
             return false
         }
 
-        val args = listOf(
-            "-reverse",
-            "-config", configFile.toString(),
-            "-passfile", passFile.toString(),
-            paths.backend.toString(),
-            paths.mount.toString()
-        )
-
+        val args = buildMountArgs(passFile)
         log.info { "Kjører gocryptfs med args: $args" }
+
         val result = runCli.runCommand("gocryptfs", args)
         passFile.toFile().delete()
 
@@ -131,8 +121,7 @@ class MountOperation(
             return false
         }
 
-        // Full verify etter mount – suppressWritable = true for read-only mount
-        val mounted = verifyMount(paths.mount, suppressWritable = true)
+        val mounted = verifyMount(paths.mount, suppressWritable)
         if (!mounted) {
             log.error { "Mount startet, men verifisering feilet" }
             return false
@@ -141,4 +130,7 @@ class MountOperation(
         log.info { "Mount OK" }
         return true
     }
+
+    /** Subclass må implementere argumentene til gocryptfs mount */
+    protected abstract fun buildMountArgs(passFile: Path): List<String>
 }

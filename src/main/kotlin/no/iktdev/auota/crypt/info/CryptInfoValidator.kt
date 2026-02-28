@@ -2,12 +2,12 @@ package no.iktdev.auota.crypt.info
 
 import mu.KotlinLogging
 
-class EncryptionInfoValidator(
-    private val store: EncryptionInfoStore
+class CryptInfoValidator(
+    private val store: CryptInfoStore
 ) {
     private val log = KotlinLogging.logger {}
 
-    fun ensureConsistent(): EncryptionInfo? {
+    fun ensureConsistent(): CryptInfo? {
         val cfg = store.loadConfigInfo()
         val backend = store.loadBackendInfo()
 

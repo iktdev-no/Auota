@@ -27,7 +27,7 @@ RUN mkdir -p /config /usr/share/app
 RUN mkdir -p /upload /upload-encrypted
 RUN mkdir -p /download /download-encrypted
 
-VOLUME ["/upload-encrypted", "/download-encrypted", "/config"]
+VOLUME ["/config"]
 
 COPY ../build/libs/app.jar /usr/share/app/app.jar
 #COPY ./docker/entrypoints/* /docker-entrypoint.d/

@@ -1,26 +1,27 @@
-package no.iktdev.auota.crypt.encrypt.operations
+package no.iktdev.auota.crypt.common
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mu.KotlinLogging
 import no.iktdev.auota.cli.RunCli
 import no.iktdev.auota.crypt.backend.BackendPaths
-import no.iktdev.auota.crypt.info.EncryptionInfo
-import no.iktdev.auota.crypt.info.EncryptionInfoStore
+import no.iktdev.auota.crypt.info.CryptInfo
+import no.iktdev.auota.crypt.info.CryptInfoStore
 import no.iktdev.auota.models.EncryptionConfig
 import java.nio.file.Files
+import java.nio.file.Path
 import java.security.MessageDigest
 import java.util.UUID
-import java.nio.file.Path
 
-class InitOperation(
-    private val runCli: RunCli,
-    private val paths: BackendPaths,
-    private val infoStore: EncryptionInfoStore,
-    private val configDir: Path // Nytt: /config
+abstract class InitOperationBase(
+    protected val runCli: RunCli,
+    protected val paths: BackendPaths,
+    protected val infoStore: CryptInfoStore,
+    protected val configDir: Path
 ) {
 
-    private val log = KotlinLogging.logger {}
+    val configFile = configDir.resolve("gocryptfs.conf")
+    protected val log = KotlinLogging.logger {}
 
     suspend fun init(cfg: EncryptionConfig): Boolean {
         log.info { "Starting gocryptfs init…" }
@@ -29,40 +30,14 @@ class InitOperation(
             log.error { "Init failed: password is blank" }
             return false
         }
+        if (!prepareConfigDirectory()) return false
 
-        // Sørg for at config-mappen finnes
-        try {
-            withContext(Dispatchers.IO) { Files.createDirectories(configDir) }
-        } catch (e: Exception) {
-            log.error(e) { "Failed to create config directory: $configDir" }
-            return false
-        }
-
-        val configFile = configDir.resolve("gocryptfs.conf")
-
-        // Init kun hvis config ikke finnes
         if (!Files.exists(configFile)) {
-            log.info { "No gocryptfs.conf found → init kryptert backend (reverse) med config i $configFile" }
+            log.info { "No gocryptfs.conf found → init kryptert backend med config i $configFile" }
 
-            val passFile = try {
-                withContext(Dispatchers.IO) {
-                    val file = Files.createTempFile("gocryptfs-pass", ".txt")
-                    Files.writeString(file, cfg.password)
-                    file
-                }
-            } catch (e: Exception) {
-                log.error(e) { "Failed to create temporary password file" }
-                return false
-            }
+            val passFile = createTempPassFile(cfg.password) ?: return false
 
-            val initArgs = listOf(
-                "-init",
-                "-reverse",
-                "-plaintextnames",
-                "-config", configFile.toString(),
-                "-passfile", passFile.toString(),
-                paths.backend.toString()   // /upload
-            )
+            val initArgs = buildInitArgs(passFile)
 
             val result = runCli.runCommand("gocryptfs", initArgs)
             passFile.toFile().delete()
@@ -77,9 +52,36 @@ class InitOperation(
             log.info { "gocryptfs.conf allerede finnes → hopper over init" }
         }
 
-        // Skriv metadata
+        return saveMetadata()
+    }
+
+    protected abstract fun buildInitArgs(passFile: Path): List<String>
+
+
+    protected suspend fun prepareConfigDirectory(): Boolean {
+        return try {
+            withContext(Dispatchers.IO) { Files.createDirectories(configDir) }
+            true
+        } catch (e: Exception) {
+            log.error(e) { "Failed to create config directory: $configDir" }
+            false
+        }
+    }
+
+    private suspend fun createTempPassFile(password: String): Path? = try {
+        withContext(Dispatchers.IO) {
+            val file = Files.createTempFile("gocryptfs-pass", ".txt")
+            Files.writeString(file, password)
+            file
+        }
+    } catch (e: Exception) {
+        log.error(e) { "Failed to create temporary password file" }
+        null
+    }
+
+    private fun saveMetadata(): Boolean {
         val info = try {
-            EncryptionInfo(
+            CryptInfo(
                 backendId = UUID.randomUUID().toString(),
                 created = System.currentTimeMillis(),
                 cryptHash = calculateBackendHash()
@@ -89,19 +91,18 @@ class InitOperation(
             return false
         }
 
-        try {
+        return try {
             infoStore.saveConfigInfo(info)
             infoStore.saveBackendInfo(info)
+            log.info { "Init complete. BackendId=${info.backendId}" }
+            true
         } catch (e: Exception) {
             log.error(e) { "Failed to write encryption metadata files" }
-            return false
+            false
         }
-
-        log.info { "Init complete. BackendId=${info.backendId}" }
-        return true
     }
 
-    private fun calculateBackendHash(): String {
+    protected fun calculateBackendHash(): String {
         val digest = MessageDigest.getInstance("SHA-256")
         Files.walk(paths.backend).use { stream ->
             stream.filter { Files.isRegularFile(it) }
