@@ -1,122 +1,78 @@
-import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward"
-import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward"
-import {
-    Box,
-    IconButton,
-    Stack,
-    ToggleButton,
-    ToggleButtonGroup,
-    Typography
-} from "@mui/material"
-import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react"
-import { useSearchParams } from "react-router-dom"
-import { apiGet } from "../api/client"
+import { Box, Stack, Typography } from "@mui/material";
+import { useCallback, useEffect, useState, type JSX } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { addBackup, ignoreBackupOrFolder, removeBackup, unignoreBackupOrFolder } from "../api/backup";
+import { apiGet } from "../api/client";
+import { downloadFileOrFolder, uploadFileOrFolder } from "../api/transfer";
+import BreadcrumbPath from "../components/BreadcrumbPath";
+import RootFolderComponent from "../components/files/RootFolderComponent";
+import UnifiedExplorer, { type RootKind } from "../components/files/UnifiedExplorer";
+import { LoadingToast } from "../components/LoadingToast";
+import type { FileAction, Roots } from "../types/types";
+import type { UnifiedFile } from "../types/webtypes";
 
-import { addBackup, ignoreBackupOrFolder, removeBackup, unignoreBackupOrFolder } from "../api/backup"
-import { BreadcrumbPath } from "../components/BreadcrumbPath"
-import { EmptyFolder } from "../components/files/EmptyFolderCard"
-import { FileContextMenu } from "../components/files/FileContextMenu"
-import { FileList } from "../components/files/FileList"
-import { LoadingToast } from "../components/LoadingToast"
-import type { FileAction, IFile } from "../types/types"
+export default function FilesPage(): JSX.Element {
+    const { root } = useParams();
+    const location = useLocation();
+    const navigate = useNavigate();
 
-/* ───────────────── Helpers ───────────────── */
+    const [roots, setRoots] = useState<Roots[]>([]);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
 
-type SortKey = "name" | "created" | "type"
-type SortDir = "asc" | "desc"
+    // Determine if we are at /files (root view)
+    const isRootView = !root;
 
+    // Extract path from URL
+    const effectiveRoot: RootKind = (root as RootKind) ?? "local";
+    const path = location.pathname.replace(`/files/${effectiveRoot}`, "") || "/";
 
-/* ───────────────── Component ───────────────── */
-
-export default function FilesPage() {
-    const [searchParams, setSearchParams] = useSearchParams()
-    const path = searchParams.get("path") ?? "/"
-
-    const [files, setFiles] = useState<IFile[]>([])
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-
-    const [sortKey, setSortKey] = useState<SortKey>("name")
-    const [sortDir, setSortDir] = useState<SortDir>("asc")
-
-    const [menuPos, setMenuPos] = useState<{ mouseX: number; mouseY: number } | null>(null)
-    const [menuFile, setMenuFile] = useState<IFile | null>(null)
-
-    /* ───── Data loading tied to URL ───── */
-
-    const load = useCallback(
-        async (path: string, push = true) => {
-            try {
-                setLoading(true)
-                setError(null)
-
-                const endpoint =
-                    path === "/" ? "/files/roots" : `/files/upload?path=${encodeURIComponent(path)}`
-                const data = await apiGet<IFile[]>(endpoint)
-                setFiles(data)
-
-                if (push) setSearchParams({ path })
-            } catch {
-                setError("Kunne ikke laste mappe")
-            } finally {
-                setLoading(false)
-            }
+    const goTo = useCallback(
+        (root: RootKind, nextPath: string): void => {
+            navigate(`/files/${root}${nextPath}`);
         },
-        [setSearchParams]
-    )
+        [navigate]
+    );
+
+    const goToRoot = useCallback(() => {
+        navigate("/files");
+    }, [navigate]);
+
 
     useEffect(() => {
-        load(path, false)
-    }, [path, load])
-
-    /* ───── Sorting ───── */
-
-    const sortedFiles = useMemo(() => {
-        const copy = [...files]
-        copy.sort((a, b) => {
-            if (a.type !== b.type) return a.type === "Folder" ? -1 : 1
-
-            let res = 0
-            switch (sortKey) {
-                case "name":
-                    res = a.name.localeCompare(b.name, undefined, { numeric: true })
-                    break
-                case "created":
-                    res = a.created - b.created
-                    break
-                case "type":
-                    res = a.type.localeCompare(b.type)
-                    break
+        const loadRoots = async (): Promise<void> => {
+            try {
+                setLoading(true);
+                setError(null);
+                const data = await apiGet<Roots[]>("/files/roots");
+                setRoots(data);
+            } catch (e) {
+                console.error(e);
+                setError("Kunne ikke laste rotene.");
+            } finally {
+                setLoading(false);
             }
-            return sortDir === "asc" ? res : -res
-        })
-        return copy
-    }, [files, sortKey, sortDir])
+        };
+        loadRoots();
+    }, []);
 
-    /* ───── Context menu ───── */
-
-    const openMenu = (e: MouseEvent<HTMLElement>, file: IFile) => {
-        e.preventDefault()
-        setMenuFile(file)
-        setMenuPos({
-            mouseX: e.clientX + 2,
-            mouseY: e.clientY + 4,
-        })
+    if (isRootView) {
+        return (
+            <Box sx={{ height: "100%", width: "100%", display: "flex", flexDirection: "column" }}>
+                <RootFolderComponent
+                    roots={roots}
+                    loading={loading}
+                    error={error}
+                    onOpenRoot={(r) => {
+                        const nextRoot: RootKind = r.type === "Jotta" ? "jotta" : "local";
+                        goTo(nextRoot, r.path);
+                    }}
+                />
+            </Box>
+        );
     }
 
-    const closeMenu = () => {
-        setMenuPos(null)
-        setMenuFile(null)
-    }
-
-    const onCopyPath = (file: IFile) => {
-        navigator.clipboard.writeText(file.uri)
-        closeMenu()
-    }
-
-
-
-    const onFileAction = async (action: FileAction, file: IFile) => {
+    const onFileAction = async (action: FileAction, file: UnifiedFile) => {
         console.log("FILE ACTION:", action, file);
 
         switch (action.id) {
@@ -137,88 +93,49 @@ export default function FilesPage() {
                 await ignoreBackupOrFolder({ backupRoot: null, exclude: file.uri })
                 break;
 
+            case "Upload":
+                await uploadFileOrFolder(file.uri);
+                break;
+
+            case "Download":
+                await downloadFileOrFolder(file.uri)
+                break;
             case "Open":
                 if (file.type === "Folder") {
-                    load(file.uri);
-                    closeMenu();
+                    //load(file.uri);
                     return;
                 }
                 break;
         }
 
-        closeMenu();
     };
 
-
-    if (error) return <Typography color="error">{error}</Typography>
-
     return (
-        <Box sx={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            <Box sx={{ flex: 1, overflow: "auto", width: "100%" }}>
-                {/* Sticky header */}
-                <Box
-                    sx={{
-                        position: "sticky",
-                        top: 0,
-                        zIndex: 20,
-                        pt: 1,
-                        bgcolor: "background.paper",
-                        borderBottom: 1,
-                        borderColor: "divider",
-                    }}
-                >
-                    <Stack direction="row" alignItems="center" spacing={2} p={1}>
-                        <Stack direction="row" alignItems="center" spacing={1} flex={1}>
-
-                            <BreadcrumbPath path={path} onNavigate={load} />
-
-                        </Stack>
-
-                        <ToggleButtonGroup
-                            size="small"
-                            value={sortKey}
-                            exclusive
-                            onChange={(_, v) => v && setSortKey(v)}
-                        >
-                            <ToggleButton value="name">Navn</ToggleButton>
-                            <ToggleButton value="created">Dato</ToggleButton>
-                            <ToggleButton value="type">Type</ToggleButton>
-                        </ToggleButtonGroup>
-
-                        <IconButton onClick={() => setSortDir(d => d === "asc" ? "desc" : "asc")}>
-                            {sortDir === "asc" ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />}
-                        </IconButton>
-                    </Stack>
-                </Box>
-
-                {/* File list */}
-                {sortedFiles.length === 0 ? (
-                    <EmptyFolder />
-                ) : (
-                    <FileList
-                        files={sortedFiles}
-                        onOpenFolder={(file) => load(file.uri)}
-                        onContextMenu={openMenu}
-                    />
-                )}
+        <Box sx={{ height: "100%", width: "100%", display: "flex", flexDirection: "column" }}>
+            <Box
+                sx={{
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 20,
+                    pt: 1,
+                    bgcolor: "background.paper",
+                    borderBottom: 1,
+                    borderColor: "divider",
+                }}
+            >
+                <Stack direction="row" alignItems="center" spacing={2} p={1}>
+                    <BreadcrumbPath root={effectiveRoot} path={path} onRoot={goToRoot} onNavigate={goTo} />
+                </Stack>
             </Box>
 
-            {/* Context menu */}
-            <FileContextMenu
-                file={menuFile}
-                position={menuPos}
-                onClose={closeMenu}
-                onFileAction={onFileAction}
-                onCopyPath={onCopyPath}
-            />
+            <UnifiedExplorer root={effectiveRoot} path={path} onNavigate={goTo} onFileAction={onFileAction} />
 
             <LoadingToast open={loading} />
-
+            {error && (
+                <Typography color="error" sx={{ p: 2 }}>
+                    {error}
+                </Typography>
+            )}
         </Box>
-    )
+    );
 }
-
-
-
-
-

@@ -15,7 +15,7 @@ import { useJottaStatus } from "../status/JottaStatusProvider";
 import { BackupPathsCard } from "../components/backup/BackupPathsCard";
 import { LogoutDialog } from "../components/dialog/LogoutDialog";
 import { EncryptionCard } from "../components/encryption/EncryptionCard";
-import { formatBytes } from "../utils";
+import { formatBytes } from "../utils/utils";
 
 export function SettingsPage() {
     const [loginOpen, setLoginOpen] = useState(false);

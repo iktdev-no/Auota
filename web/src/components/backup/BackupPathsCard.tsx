@@ -2,7 +2,7 @@ import { Card, CardContent, Divider, Stack, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { getBackupFolders } from "../../api/backup";
 import type { BackupItem } from "../../types/types";
-import { EmptyFolder } from "../files/EmptyFolderCard";
+import EmptyFolder from "../files/EmptyFolderCard";
 import { BackupPathItem } from "./BackupPathItem";
 
 export function BackupPathsCard() {

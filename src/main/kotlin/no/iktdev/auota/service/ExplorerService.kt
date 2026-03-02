@@ -3,103 +3,135 @@ package no.iktdev.auota.service
 import no.iktdev.auota.backup.BackupConfigStore
 import no.iktdev.auota.crypt.encrypt.EncryptionManager
 import no.iktdev.auota.models.crypt.EncryptionState
-import no.iktdev.auota.models.file.*
+import no.iktdev.auota.models.files.*
+import no.iktdev.auota.service.status.JottaStatusService
 import org.springframework.stereotype.Service
 import java.io.File
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
 @Service
 class ExplorerService(
+    private val jottaStatusService: JottaStatusService,
     private val encryption: EncryptionManager,
     private val backupConfigStore: BackupConfigStore
 ) {
 
-    // Systemmapper som aldri skal vises i UI
-    private val systemHiddenPaths = listOf(
-        "/bin",
-        "/boot",
-        "/dev",
-        "/etc",
-        "/lib",
-        "/lib64",
-        "/opt",
-        "/proc",
-        "/root",
-        "/sbin",
-        "/srv",
-        "/sys",
-        "/tmp",
-        "/var",
-        "/usr"
+    private val alternativeFolders = mapOf(
+        "data" to "/data",
+        "media" to "/media",
+        "mount" to "/mount",
+        "mnt" to "/mnt"
     )
 
-    fun listRoots(): List<IFile> {
-        val success = listOf(EncryptionState.READY, EncryptionState.MANUAL_OVERRIDE)
+    private val success = listOf(EncryptionState.READY, EncryptionState.MANUAL_OVERRIDE)
 
-        val cfg = backupConfigStore.load()
+    suspend fun listRoots(): List<Roots> {
+        val roots = mutableListOf<Roots>()
 
-        val roots = if(encryption.state.value in success) {
-            listOf(encryption.paths.mount.toFile())
-        } else {
-            listOf(encryption.paths.backend.toFile())
+        // Upload (bruker alltid /upload i UI)
+        roots += Roots(
+            id = "upload",
+            name = "Upload",
+            type = if (encryption.state.value in success)
+                RootType.UploadEncrypted
+            else
+                RootType.UploadUnencrypted,
+            path = "/upload"
+        )
+
+        // Download
+        roots += Roots(
+            id = "download",
+            name = "Download",
+            type = RootType.Download,
+            path = "/download"
+        )
+
+        // Alternative mapper
+        alternativeFolders.forEach { (id, folder) ->
+            val f = File(folder)
+            if (f.exists() && f.isDirectory) {
+                roots += Roots(
+                    id = id,
+                    name = f.name,
+                    type = RootType.LocalFolder,
+                    path = folder
+                )
+            }
         }
-        return roots.map { it -> it.toFileInfo(cfg) }
+
+        // Jottacloud
+        if (jottaStatusService.getStatus().success) {
+            roots += Roots(
+                id = "jotta",
+                name = "Jotta Cloud",
+                type = RootType.Jotta,
+                path = "/" // JottaFs root
+            )
+        }
+
+        return roots
     }
 
-
-
-    fun listAtUploadFolder(path: String): List<IFile> {
-        val success = listOf(EncryptionState.READY, EncryptionState.MANUAL_OVERRIDE)
-
-        val baseFolder = if (encryption.state.value in success) {
-            encryption.paths.mount
-        } else {
-            encryption.paths.backend
-        }
-
-        val basePath = baseFolder.toFile().toPath().toRealPath() // canonical
-        val targetPath = basePath.resolve(path).normalize().toRealPath()
-
-        // 🔒 Sikkerhetssjekk – må være innenfor baseFolder
-        if (!targetPath.startsWith(basePath)) {
-            println("Security warning: Attempted access outside baseFolder: $path")
-            return emptyList()
-        }
-
-        val targetDir = targetPath.toFile()
-        if (!targetDir.exists() || !targetDir.isDirectory) {
-            return emptyList()
-        }
-
-        val cfg = backupConfigStore.load()
-
-        return targetDir.listFiles()
-            ?.map { it.toFileInfo(cfg) }
-            ?: emptyList()
-    }
-
-
+    /**
+     * Lokal filutforsker for ALLE lokale paths.
+     * Upload håndteres automatisk av backend via encryption.paths.
+     */
     fun listAt(path: String): List<IFile> {
-        val dir = File(path)
+        // Hvis path er root → returner kun definerte lokale roots
+        if (path == "/") {
+            val cfg = backupConfigStore.load()
+
+            val folders: MutableList<IFile> = mutableListOf()
+            (if(encryption.state.value in success) {
+                encryption.paths.mount.toFile().toFileInfo(cfg)
+            } else {
+                encryption.paths.backend.toFile().toFileInfo(cfg)
+            }).also { folders.add(it) }
+            File("/download").toFileInfo(cfg)
+                .also { folders.add(it) }
+            alternativeFolders.mapValues { File(it.value).toFileInfo(cfg) }
+                .also { folders.addAll(it.values) }
+
+            return folders
+        }
+
+        // Ellers: vanlig lokal filutforsking
+        val resolvedPath = resolveLocalPath(path)
+        val dir = File(resolvedPath)
 
         if (!dir.exists() || !dir.isDirectory) return emptyList()
 
         val cfg = backupConfigStore.load()
 
         return dir.listFiles()
-            ?.filterNot { file ->
-                val p = file.toPath()
-                // bare skjul systemmapper, ikke ekskluderte filer
-                systemHiddenPaths.any { p.startsWith(Paths.get(it)) }
-            }
             ?.map { file -> file.toFileInfo(cfg) }
             ?: emptyList()
     }
 
 
+    /**
+     * Oversetter /upload til riktig fysisk mappe basert på kryptering.
+     */
+    private fun resolveLocalPath(path: String): String {
+        return if (path.startsWith("/upload")) {
+            val relative = path.removePrefix("/upload")
+            val base = if (encryption.state.value in success)
+                encryption.paths.mount
+            else
+                encryption.paths.backend
+
+            base.resolve(relative).normalize().toString()
+        } else {
+            path
+        }
+    }
+
     fun pathToFile(path: String): IFile? {
-        val file = File(path)
+        val resolved = resolveLocalPath(path)
+        val file = File(resolved)
         if (!file.exists()) return null
 
         val cfg = backupConfigStore.load()
@@ -109,10 +141,7 @@ class ExplorerService(
     private fun File.toFileInfo(cfg: no.iktdev.auota.backup.BackupConfig): IFile {
         val filePath: Path = this.toPath()
 
-        // Sjekk om filen ligger under noen root
         val isIncluded = cfg.roots.any { root -> filePath.startsWith(Paths.get(root)) }
-
-        // Sjekk om filen ligger under noen excludePaths tilhørende en root
         val isExcluded = cfg.excluded.any { item ->
             item.excludePaths.any { excludePath ->
                 filePath.startsWith(Paths.get(excludePath))
@@ -128,7 +157,6 @@ class ExplorerService(
             isFolder = this.isDirectory,
             filePath = filePath
         )
-
 
         return if (this.isDirectory) {
             Folder(
@@ -160,21 +188,24 @@ class ExplorerService(
     fun canBeAddedToBackup(path: Path): Boolean {
         val p = path.normalize()
 
-        // 1) Ikke tillat systemmapper
-        if (systemHiddenPaths.any { p.startsWith(Paths.get(it)) }) return false
+        // Finn faktisk upload-rot (kryptert eller ukryptert)
+        val uploadRoot = if (encryption.state.value in success)
+            encryption.paths.mount.normalize()
+        else
+            encryption.paths.backend.normalize()
 
-        // 2) Ikke tillat root
-        if (p.toString() == "/") return false
+        // 1. Må være en mappe
+        if (!Files.isDirectory(p)) return false
 
-        // 3) Tillat backend og alt under
-        if (p.startsWith(encryption.paths.mount)) return true
+        // 2. Må ligge under upload-root
+        if (!p.startsWith(uploadRoot)) return false
 
-        // 4) Tillat mount og alt under, men ikke selve mount-root
-        if (p.startsWith(encryption.paths.backend) && p != encryption.paths.backend) return true
+        // 3. Men ikke selve upload-root
+        if (p == uploadRoot) return false
 
-        // 5) Alt annet er ulovlig
-        return false
+        return true
     }
+
 
     private fun buildActions(
         isIncluded: Boolean,
@@ -186,6 +217,7 @@ class ExplorerService(
         val actions = mutableListOf<FileAction>()
         val canAdd = if (isFolder) canBeAddedToBackup(filePath) else false
 
+        // Backup-handling
         if (isIncluded) {
             actions += FileAction(FileActionType.RemoveFromBackup)
             actions += FileAction(FileActionType.ExcludeFromBackup)
@@ -197,9 +229,21 @@ class ExplorerService(
             actions += FileAction(FileActionType.IncludeInBackup)
         }
 
+        // Upload-handling
+        if (isUnderAlternativeFolder(filePath)) {
+            actions += FileAction(FileActionType.Upload)
+        }
+
         return actions
     }
 
+    private fun isUnderAlternativeFolder(path: Path): Boolean {
+        val normalized = path.toAbsolutePath().normalize().toString()
+
+        return alternativeFolders.values.any { alt ->
+            normalized.startsWith(alt)
+        }
+    }
 
 
 }

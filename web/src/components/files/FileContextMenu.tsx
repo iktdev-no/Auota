@@ -1,23 +1,24 @@
 import { Menu, MenuItem } from "@mui/material";
-import type { FileAction, IFile } from "../../types/types";
+import type { FileAction } from "../../types/types";
+import type { UnifiedFile } from "../../types/webtypes";
 
 export interface FileContextMenuProps {
-    file: IFile | null
-    position: { mouseX: number; mouseY: number } | null
-    onClose: () => void
-    onFileAction: (action: FileAction, file: IFile) => void
-    onCopyPath: (file: IFile) => void
+    file: UnifiedFile | null;
+    position: { mouseX: number; mouseY: number } | null;
+    onClose: () => void;
+    onFileAction: (action: FileAction, file: UnifiedFile) => void;
+    onCopyPath: (file: UnifiedFile) => void;
 }
 
-export function FileContextMenu({
+export default function FileContextMenu({
     file,
     position,
     onClose,
     onFileAction,
     onCopyPath
 }: FileContextMenuProps) {
-    if (!file) return null
-
+    if (!file) return null;
+    console.log(file)
     return (
         <Menu
             open={!!position}
@@ -29,9 +30,7 @@ export function FileContextMenu({
                     : undefined
             }
         >
-
-            {/* File actions */}
-            {file.actions.map(action => (
+            {file.actions?.map(action => (
                 <MenuItem
                     key={action.id}
                     onClick={() => onFileAction(action, file)}
@@ -40,8 +39,7 @@ export function FileContextMenu({
                 </MenuItem>
             ))}
 
-            {/* Always available */}
             <MenuItem onClick={() => onCopyPath(file)}>Kopier sti</MenuItem>
         </Menu>
-    )
+    );
 }

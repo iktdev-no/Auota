@@ -1,7 +1,7 @@
 import InboxIcon from "@mui/icons-material/Inbox";
 import { Box, Typography } from "@mui/material";
 
-export function EmptyFolder({ text = "Mappen er tom" }: { text?: string }) {
+export default function EmptyFolder({ text = "Mappen er tom" }: { text?: string }) {
     return (
         <Box
             sx={{

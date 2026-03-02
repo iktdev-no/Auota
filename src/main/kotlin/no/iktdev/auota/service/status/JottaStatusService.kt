@@ -34,6 +34,11 @@ class JottaStatusService(
 
     var cachedStatus = MutableStateFlow<JottaSummary?>(null)
 
+    private var _deviceName: String? = null
+    fun getDeviceName(): String? {
+        return _deviceName
+    }
+
     init {
         scope.launch {
             combine(
@@ -119,6 +124,8 @@ class JottaStatusService(
         val raw = result.output.trim()
 
         val json = getJsonStatus(raw)
+        _deviceName = json?.User?.device?.Name
+
         if (json != null) {
             return JottaSummary(true, raw, json, null)
         }

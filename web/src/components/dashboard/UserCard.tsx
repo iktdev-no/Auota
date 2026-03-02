@@ -1,7 +1,7 @@
 import AllInclusiveIcon from "@mui/icons-material/AllInclusive";
 import { Avatar, Box, Card, CardContent, LinearProgress, Typography } from "@mui/material";
 import type { JottaStatus } from "../../types/types";
-import { formatBytes } from "../../utils";
+import { formatBytes } from "../../utils/utils";
 
 interface Props {
     data: JottaStatus | null;

@@ -3,6 +3,7 @@ import ArticleIcon from "@mui/icons-material/Article";
 import CloudIcon from '@mui/icons-material/Cloud';
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import FolderIcon from "@mui/icons-material/Folder";
+import ImportExportIcon from '@mui/icons-material/ImportExport';
 import SettingsIcon from "@mui/icons-material/Settings";
 import { Box } from "@mui/material";
 import { useNavigate } from "react-router-dom";
@@ -61,16 +62,16 @@ export function useSidebarMenu() {
             },  */
             {
                 id: "files",
-                label: "Filer",
+                label: "Filder",
                 icon: <FolderIcon />,
                 onClick: () => navigate("/files")
             },
             {
-                id: "jfiles",
-                label: "Cloud files",
-                icon: <CloudFolder />,
-                onClick: () => navigate("/jfiles")
-            }
+                id: "exchange",
+                label: "Exchange",
+                icon: <ImportExportIcon />,
+                onClick: () => navigate("/exchange")
+            },
         ],
         bottomMenu: [
             /*    {

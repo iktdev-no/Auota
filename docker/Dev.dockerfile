@@ -24,7 +24,7 @@ RUN curl -fsSL https://repo.jotta.us/public.gpg | gpg --dearmor -o /usr/share/ke
     rm -rf /var/lib/apt/lists/*
 
 
-RUN mkdir -p /config /usr/share/app
+RUN mkdir -p /config /data /media /mnt /mount /usr/share/app
 RUN mkdir -p /upload /upload-encrypted
 RUN mkdir -p /download /download-encrypted
 

@@ -3,10 +3,9 @@ package no.iktdev.auota.crypt.common
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mu.KLogger
-import mu.KotlinLogging
 import no.iktdev.auota.cli.RunCli
 import no.iktdev.auota.crypt.backend.BackendPaths
-import no.iktdev.auota.models.EncryptionConfig
+import no.iktdev.auota.models.CryptConfig
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -78,7 +77,7 @@ abstract class MountOperationBase(
     }
 
     /** Mount backend med gocryptfs – subclass bestemmer args */
-    suspend fun mount(cfg: EncryptionConfig, suppressWritable: Boolean = false): Boolean {
+    suspend fun mount(cfg: CryptConfig, suppressWritable: Boolean = false): Boolean {
         log.info { "Starter mount-prosess..." }
         log.info { "Backend: ${paths.backend}, Mountpoint: ${paths.mount}" }
 

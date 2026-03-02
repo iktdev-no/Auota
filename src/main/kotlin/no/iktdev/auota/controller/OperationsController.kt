@@ -2,7 +2,6 @@ package no.iktdev.auota.controller
 
 import no.iktdev.auota.models.OperationRequest
 import no.iktdev.auota.models.OperationResponse
-import no.iktdev.auota.models.jottaFs.JottaFs
 import no.iktdev.auota.service.OperationsService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping

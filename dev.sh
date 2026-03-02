@@ -152,6 +152,9 @@ docker run --rm -it \
     -v "$(pwd)/build/libs/app.jar":/usr/share/app/app.jar \
     -v ./docker/entrypoints/:/docker-entrypoint.d/ \
     -v auota_config:/config \
+    -v "/mount/870 EVO 1TB/Workspace/Auota/.dev/data":/data \
+    -v "/mount/870 EVO 1TB/Workspace/Auota/.dev/data":/upload \
+    -v "/mount/870 EVO 1TB/Workspace/Auota/.dev/download":/download \
     -v auota_jottad:/root/.jottad \
     -p 8080:8080 \
     $IMAGE_NAME

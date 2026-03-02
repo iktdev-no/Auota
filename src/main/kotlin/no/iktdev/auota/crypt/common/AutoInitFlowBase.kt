@@ -1,11 +1,10 @@
 package no.iktdev.auota.crypt.common
 
 import mu.KLogger
-import mu.KotlinLogging
 import no.iktdev.auota.crypt.backend.BackendChecker
 import no.iktdev.auota.crypt.backend.BackendPaths
 import no.iktdev.auota.crypt.info.CryptInfoValidator
-import no.iktdev.auota.models.EncryptionConfig
+import no.iktdev.auota.models.CryptConfig
 import no.iktdev.auota.models.crypt.EncryptionState
 import java.nio.file.Files
 
@@ -20,7 +19,7 @@ abstract class AutoInitFlowBase(
     protected abstract val mountOp: MountOperationBase
     protected abstract val verifyOp: VerifyOperationBase
 
-    suspend fun run(cfg: EncryptionConfig): EncryptionState {
+    suspend fun run(cfg: CryptConfig): EncryptionState {
         // 1️⃣ Verifiser metadata
         try {
             infoValidator.ensureConsistent()

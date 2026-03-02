@@ -1,12 +1,23 @@
 // AUTO-GENERATED. DO NOT EDIT.
 // Source: no.iktdev.auota.models
 
+export interface TransferSelectionCount {
+  Bytes: number | null;
+  Files: number | null;
+}
+
 export type DecryptionState = "NOT_INITIALIZED" | "INITIALIZING" | "RESTORING" | "READY" | "FAILED" | "REJECTED" | "NOT_ENABLED" | "TEARDOWN" | "MANUAL_OVERRIDE"
 
 export type EncryptionState = "NOT_INITIALIZED" | "INITIALIZING" | "RESTORING" | "READY" | "FAILED" | "REJECTED" | "NOT_ENABLED" | "TEARDOWN" | "MANUAL_OVERRIDE"
 
 export interface BackupInfo {
   State: BackupState | null;
+}
+
+export interface CryptConfig {
+  algorithm: string;
+  enabled: boolean;
+  password: string | null;
 }
 
 export interface GlobalState {
@@ -16,10 +27,16 @@ export interface GlobalState {
   Uploading: Record<string, any> | null;
 }
 
-export interface EncryptionConfig {
-  algorithm: string;
-  enabled: boolean;
-  password: string | null;
+export interface JottaTransfer {
+  CompletedTimeMs: number | null;
+  Errors: TransferErrors | null;
+  Id: string;
+  Local: string;
+  Remaining: TransferRemaining | null;
+  Remote: string;
+  SelectionCount: TransferSelectionCount | null;
+  StartedTimeMs: number | null;
+  Total: TransferTotal;
 }
 
 export interface OperationRequest {
@@ -74,39 +91,6 @@ export interface AvatarInfo {
   Initials: string | null;
 }
 
-export type JottaFsItem = JottaFile | JottaFolder
-
-export interface JottaFileAction {
-  id: JottaFileActionType;
-  requiresConfirmation: boolean;
-  title: string;
-}
-
-export type JottaFileActionType = "Download" | "Open"
-
-export interface JottaFs {
-  Files: JottaFile[] | null;
-  Folders: JottaFolder[] | null;
-}
-
-export interface JottaFile {
-  type: "File";
-  Checksum: string;
-  Modified: number;
-  Name: string;
-  Path: string;
-  Size: number;
-  actions: JottaFileAction[];
-  extension: string;
-}
-
-export interface JottaFolder {
-  type: "Folder";
-  Name: string;
-  Path: string | null;
-  actions: JottaFileAction[];
-}
-
 export interface BackupState {
   Enabled: EnabledBackup | null;
 }
@@ -139,6 +123,11 @@ export interface BackupHistory {
   Upload: UploadHistory | null;
 }
 
+export interface TransferTotal {
+  Bytes: number | null;
+  Files: number | null;
+}
+
 export interface JottadStatus {
   alive: boolean;
   pid: number;
@@ -151,6 +140,82 @@ export interface JottaStatus {
   State: GlobalState | null;
   Sync: SyncInfo | null;
   User: UserInfo | null;
+}
+
+export type FileType = "Folder" | "File"
+
+export type JottaFsItem = JottaFile | JottaFolder
+
+export interface File {
+  type: "File";
+  actions: FileAction[];
+  created: number;
+  extension: string;
+  icon: FileIcon;
+  isDataSource: boolean;
+  isEncrypted: boolean;
+  isExcludedFromBackup: boolean;
+  isInBackup: boolean;
+  name: string;
+  size: number;
+  uri: string;
+}
+
+export type RootType = "Jotta" | "UploadUnencrypted" | "UploadEncrypted" | "Download" | "LocalFolder"
+
+export type IFile = File | Folder
+
+export interface FileAction {
+  id: FileActionType;
+  requiresConfirmation: boolean;
+  title: string;
+}
+
+export type FileIcon = "Default" | "Encrypted" | "Backend" | "BackupIncluded" | "BackupExcluded"
+
+export interface Roots {
+  id: string;
+  name: string;
+  path: string;
+  type: RootType;
+}
+
+export interface Folder {
+  type: "Folder";
+  actions: FileAction[];
+  created: number;
+  icon: FileIcon;
+  isDataSource: boolean;
+  isEncrypted: boolean;
+  isExcludedFromBackup: boolean;
+  isInBackup: boolean;
+  name: string;
+  uri: string;
+}
+
+export interface JottaFs {
+  Files: JottaFile[] | null;
+  Folders: JottaFolder[] | null;
+}
+
+export interface JottaFile {
+  type: "JottaFile";
+  Checksum: string;
+  Modified: number;
+  Name: string;
+  Path: string;
+  Size: number;
+  actions: FileAction[];
+  extension: string;
+}
+
+export type FileActionType = "AddToBackup" | "IncludeInBackup" | "ExcludeFromBackup" | "RemoveFromBackup" | "Upload" | "Download" | "Open"
+
+export interface JottaFolder {
+  type: "JottaFolder";
+  Name: string;
+  Path: string | null;
+  actions: FileAction[];
 }
 
 export interface LogfileResponse {
@@ -170,48 +235,6 @@ export interface EnabledBackup {
   Backups: BackupFolder[] | null;
   deviceName: string | null;
 }
-
-export type FileType = "Folder" | "File"
-
-export interface File {
-  type: "File";
-  actions: FileAction[];
-  created: number;
-  extension: string;
-  icon: FileIcon;
-  isDataSource: boolean;
-  isEncrypted: boolean;
-  isExcludedFromBackup: boolean;
-  isInBackup: boolean;
-  name: string;
-  size: number;
-  uri: string;
-}
-
-export type IFile = File | Folder
-
-export interface FileAction {
-  id: FileActionType;
-  requiresConfirmation: boolean;
-  title: string;
-}
-
-export type FileIcon = "Default" | "Encrypted" | "Backend" | "BackupIncluded" | "BackupExcluded"
-
-export interface Folder {
-  type: "Folder";
-  actions: FileAction[];
-  created: number;
-  icon: FileIcon;
-  isDataSource: boolean;
-  isEncrypted: boolean;
-  isExcludedFromBackup: boolean;
-  isInBackup: boolean;
-  name: string;
-  uri: string;
-}
-
-export type FileActionType = "AddToBackup" | "IncludeInBackup" | "ExcludeFromBackup" | "RemoveFromBackup" | "Open"
 
 export interface JottaConfig {
   backuppaused: boolean;
@@ -264,6 +287,15 @@ export interface OperationResponse {
 }
 
 export type JottaDaemonState = "NOT_STARTED" | "STARTING" | "RUNNING" | "STOPPED" | "FAILED"
+
+export interface TransferErrors {
+  message: string | null;
+}
+
+export interface TransferRemaining {
+  Bytes: number | null;
+  Files: number | null;
+}
 
 export interface AuthResponse {
   message: string;

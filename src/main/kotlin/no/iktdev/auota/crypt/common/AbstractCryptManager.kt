@@ -65,15 +65,15 @@ abstract class AbstractCryptManager(
     // ------------------------------------------------------------
     // CONFIG
     // ------------------------------------------------------------
-    fun loadConfig(): EncryptionConfig =
-        if (Files.exists(configFile)) mapper.readValue(configFile.toFile()) else EncryptionConfig(enabled = false)
+    fun loadConfig(): CryptConfig =
+        if (Files.exists(configFile)) mapper.readValue(configFile.toFile()) else CryptConfig(enabled = false)
 
-    fun saveConfig(cfg: EncryptionConfig) {
+    fun saveConfig(cfg: CryptConfig) {
         Files.createDirectories(configFile.parent)
         mapper.writerWithDefaultPrettyPrinter().writeValue(configFile.toFile(), cfg)
     }
 
-    fun applyConfig(cfg: EncryptionConfig): Boolean {
+    fun applyConfig(cfg: CryptConfig): Boolean {
         return try {
             saveConfig(cfg)
             if (!cfg.enabled) {

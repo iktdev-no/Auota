@@ -7,7 +7,7 @@ import no.iktdev.auota.cli.RunCli
 import no.iktdev.auota.crypt.backend.BackendPaths
 import no.iktdev.auota.crypt.info.CryptInfo
 import no.iktdev.auota.crypt.info.CryptInfoStore
-import no.iktdev.auota.models.EncryptionConfig
+import no.iktdev.auota.models.CryptConfig
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
@@ -23,7 +23,7 @@ abstract class InitOperationBase(
     val configFile = configDir.resolve("gocryptfs.conf")
     protected val log = KotlinLogging.logger {}
 
-    suspend fun init(cfg: EncryptionConfig): Boolean {
+    suspend fun init(cfg: CryptConfig): Boolean {
         log.info { "Starting gocryptfs init…" }
 
         if (cfg.password.isNullOrBlank()) {

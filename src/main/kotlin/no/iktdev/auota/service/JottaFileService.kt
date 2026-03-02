@@ -2,12 +2,11 @@ package no.iktdev.auota.service
 
 import com.google.gson.Gson
 import com.squareup.moshi.Moshi
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import mu.KotlinLogging
-import no.iktdev.auota.cli.JottaCli
 import no.iktdev.auota.cli.JottaCliClient
-import no.iktdev.auota.models.jottaFs.JottaFs
+import no.iktdev.auota.models.files.FileAction
+import no.iktdev.auota.models.files.FileActionType
+import no.iktdev.auota.models.files.JottaFs
 import org.springframework.stereotype.Service
 import java.io.File
 
@@ -20,6 +19,7 @@ class JottaFileService(
     private val log = KotlinLogging.logger {}
 
     suspend fun explore(path: String): JottaFs? {
+        log.info { "Asking Jotta for path: $path" }
         val result = if (path.isBlank()) {
             jottaCli.run("ls", "--json")
         } else {
@@ -39,8 +39,18 @@ class JottaFileService(
             log.error("Failed to read Jotta File data on $path", e)
             null
         }
-        return jfs?.applyAttributes()?.appyAssumedPathForFolders()
+        log.debug { "Responding with result from Jotta for path: $path" }
+        return jfs?.applyAttributes()?.appyAssumedPathForFolders()?.applyActions()
     }
+
+    fun JottaFs.applyActions(): JottaFs {
+        return this.apply {
+            this.Files?.map { file -> file.actions = listOf(FileAction(id = FileActionType.Download)) }
+            this.Folders?.map { file -> file.actions = listOf(FileAction(id = FileActionType.Download)) }
+        }
+    }
+
+
     fun JottaFs.applyAttributes(): JottaFs {
         this.Files?.onEach { file ->
             file.extension = File(file.Path).extension

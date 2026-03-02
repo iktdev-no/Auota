@@ -1,4 +1,4 @@
-package no.iktdev.auota.models.file
+package no.iktdev.auota.models.files
 
 enum class FileType {
     Folder,
@@ -83,6 +83,8 @@ enum class FileActionType(val label: String) {
     IncludeInBackup("Include in backup"),
     ExcludeFromBackup("Exclude from backup"),
     RemoveFromBackup("Remove from backup"),
+    Upload("Upload"),
+    Download("Download"),
     Open("Open"),
 }
 

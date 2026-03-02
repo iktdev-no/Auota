@@ -4,14 +4,12 @@ import kotlinx.coroutines.test.runTest
 import no.iktdev.auota.cli.JottaCli
 import no.iktdev.auota.cli.JottaCliClient
 import no.iktdev.auota.config.MoshiConfig
-import no.iktdev.auota.models.file.FileType
+import no.iktdev.auota.models.files.FileType
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
-import org.skyscreamer.jsonassert.JSONAssert.assertEquals
 
 class JottaFileServiceTest {
     val moshi = MoshiConfig().moshi()

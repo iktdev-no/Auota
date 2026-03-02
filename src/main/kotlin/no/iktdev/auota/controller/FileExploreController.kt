@@ -1,34 +1,43 @@
 package no.iktdev.auota.controller
 
 import mu.KotlinLogging
-import no.iktdev.auota.models.file.IFile
+import no.iktdev.auota.models.files.Roots
+import no.iktdev.auota.models.files.IFile
+import no.iktdev.auota.models.files.JottaFs
 import no.iktdev.auota.service.ExplorerService
+import no.iktdev.auota.service.JottaFileService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import java.io.File
+import java.net.URLDecoder
 
 @RestController
 @RequestMapping("/api/files")
 class FileExploreController(
-    private val explorer: ExplorerService
+    private val explorer: ExplorerService,
+    private val jottafs: JottaFileService
 ) {
     private val log = KotlinLogging.logger {}
 
     @GetMapping("/roots")
-    fun roots(): ResponseEntity<List<IFile>> {
-        return ResponseEntity.ok(
-            explorer.listRoots()
-        )
+    suspend fun roots(): ResponseEntity<List<Roots>> =
+        ResponseEntity.ok(explorer.listRoots())
+
+    @GetMapping("/list")
+    fun listLocal(@RequestParam path: String): ResponseEntity<List<IFile>> {
+        val decoded = URLDecoder.decode(path, Charsets.UTF_8)
+
+        return ResponseEntity.ok(explorer.listAt(decoded))
     }
 
-    @GetMapping("/upload")
-    fun list(@RequestParam path: String): ResponseEntity<List<IFile>> {
-        val file = File(path)
-        if (!file.exists() || file.isFile) {
-            return ResponseEntity.notFound().build()
-        }
-        val files = explorer.listAtUploadFolder(path)
-        return ResponseEntity.ok(files)
+
+    @GetMapping("/jotta")
+    suspend fun listJotta(@RequestParam path: String): ResponseEntity<JottaFs> {
+        val decoded = URLDecoder.decode(path, Charsets.UTF_8)
+
+        val result = jottafs.explore(decoded)
+        return if (result != null) ResponseEntity.ok(result)
+        else ResponseEntity.notFound().build()
     }
+
 
 }

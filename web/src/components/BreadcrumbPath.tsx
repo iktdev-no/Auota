@@ -1,56 +1,61 @@
-import HomeIcon from "@mui/icons-material/Home"
-import { Breadcrumbs, Chip } from "@mui/material"
+// src/components/BreadcrumbPath.tsx
+import HomeIcon from "@mui/icons-material/Home";
+import { Breadcrumbs, Chip } from "@mui/material";
 
 export interface BreadcrumbPathProps {
-    path: string
-    onNavigate: (path: string) => void
+    root: "root" | "local" | "jotta";
+    path: string;
+    onNavigate: (root: "root" | "local" | "jotta", path: string) => void;
+    onRoot: () => void;
 }
 
 function splitPath(path: string): string[] {
-    if (!path || path === "/") return []
-    return path.split("/").filter(Boolean)
+    if (!path || path === "/") return [];
+    return path.split("/").filter(Boolean);
 }
 
-function buildPath(parts: string[], index: number) {
-    return "/" + parts.slice(0, index + 1).join("/")
+function buildPath(parts: string[], index: number): string {
+    return "/" + parts.slice(0, index + 1).join("/");
 }
 
-export function BreadcrumbPath({ path, onNavigate }: BreadcrumbPathProps) {
-    const segments = splitPath(path)
+const BreadcrumbPath = ({ root, path, onNavigate, onRoot }: BreadcrumbPathProps) => {
+    const segments = splitPath(path);
 
     return (
-        <>
+        <Breadcrumbs separator="›">
             <Chip
                 icon={<HomeIcon />}
-                label="Home"
+                label="Root"
                 clickable
-                onClick={() => onNavigate("/")}
+                onClick={() => onRoot()}
                 sx={{ fontWeight: 600 }}
             />
-            <Breadcrumbs separator="›">
-                <Chip
-                    label={"/"}
-                    clickable
-                    onClick={() => onNavigate("/")}
-                    variant="outlined"
-                    sx={{ fontWeight: 500 }}
-                />
 
-                {segments.map((segment, index) => {
-                    const p = buildPath(segments, index)
-                    return (
-                        <Chip
-                            key={p}
-                            label={segment}
-                            clickable
-                            onClick={() => onNavigate(p)}
-                            variant="outlined"
-                            sx={{ fontWeight: 500 }}
-                        />
-                    )
-                })}
-            </Breadcrumbs>
-        </>
+            <Chip
+                label={root === "local" ? "Local" : "Jottacloud"}
+                clickable
+                onClick={() => onNavigate(root, "/")}
+                variant="outlined"
+                sx={{ fontWeight: 500 }}
+            />
 
-    )
-}
+            {segments.map((segment, index) => {
+                const p = buildPath(segments, index);
+                const display = decodeURIComponent(segment);
+                return (
+                    <Chip
+                        key={p}
+                        label={display}
+                        clickable
+                        onClick={() => onNavigate(root, p)}
+                        variant="outlined"
+                        sx={{ fontWeight: 500 }}
+                    />
+                );
+            })}
+        </Breadcrumbs>
+
+    );
+};
+
+export default BreadcrumbPath;

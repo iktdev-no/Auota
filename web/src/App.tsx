@@ -5,9 +5,9 @@ import { ToastContainer } from "react-toastify";
 import { Sidebar } from "./components/Sidebar";
 import { TopBar } from "./components/TopBar";
 import { DashboardPage } from "./pages/DashboardPage";
+import ExchangePage from "./pages/ExchangePage";
 import FilesPage from "./pages/FilesPage";
 import { HealthPage } from "./pages/HealthPage";
-import JottaFilesPage from "./pages/JottaFilesPage";
 import { LogsPage } from "./pages/LogsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SseProvider } from "./sse/SseProvider";
@@ -80,7 +80,8 @@ export default function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/health" element={<HealthPage />} />
             <Route path="/files" element={<FilesPage />} />
-            <Route path="/jfiles" element={<JottaFilesPage />} />
+            <Route path="/files/:root/*" element={<FilesPage />} />
+            <Route path="/exchange" element={<ExchangePage />} />
             <Route path="/logs" element={<LogsPage />} />
           </Routes>
           <ToastContainer

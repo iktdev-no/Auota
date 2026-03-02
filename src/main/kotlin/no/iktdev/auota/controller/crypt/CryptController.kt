@@ -1,11 +1,11 @@
-package no.iktdev.auota.controller
+package no.iktdev.auota.controller.crypt
 
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import mu.KotlinLogging
-import no.iktdev.auota.crypt.encrypt.EncryptionManager
+import mu.KLogger
+import no.iktdev.auota.crypt.common.AbstractCryptManager
 import no.iktdev.auota.models.EncryptionStatus
 import no.iktdev.auota.models.GocryptfsConfigExport
 import org.springframework.http.HttpStatus
@@ -13,40 +13,36 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
-@RestController
-@RequestMapping("/api/encryption")
-class EncryptionController(
-    private val manager: EncryptionManager
+abstract class CryptController(
+    private val manager: AbstractCryptManager
 ) {
-    private val log = KotlinLogging.logger {}
-
+    abstract val log: KLogger
 
     @GetMapping("/status")
     fun status(): ResponseEntity<EncryptionStatus> =
         ResponseEntity.ok(manager.getStatus())
 
-    @PostMapping("/encrypt")
-    suspend fun encrypt(@RequestBody enabled: Boolean): ResponseEntity<EncryptionStatus> {
-        val current = manager.loadConfig()
-        val updated = current.copy(enabled = enabled)
-        log.info { "Changing Encrypting from ${current.enabled} to ${updated.enabled}" }
-        manager.applyConfig(updated)
+    @PostMapping("/enable")
+    fun enable(@RequestBody enabled: Boolean): ResponseEntity<EncryptionStatus> {
+        val cfg = manager.loadConfig().copy(enabled = enabled)
+        manager.applyConfig(cfg)
         return ResponseEntity.ok(manager.getStatus())
     }
 
     @PostMapping("/password", consumes = [MediaType.TEXT_PLAIN_VALUE])
-    suspend fun updatePassword(@RequestBody password: String): ResponseEntity<EncryptionStatus> {
-        val updated = manager.loadConfig().copy(password = password)
-        manager.applyConfig(updated)
+    fun updatePassword(@RequestBody password: String): ResponseEntity<EncryptionStatus> {
+        val cfg = manager.loadConfig().copy(password = password)
+        manager.applyConfig(cfg)
         return ResponseEntity.ok(manager.getStatus())
     }
 
     @PostMapping("/override/enable")
     fun enableOverride(): ResponseEntity<EncryptionStatus> {
-        val status = manager.enableManualOverride()
-        return if (status)
-             ResponseEntity.ok(manager.getStatus())
-        else ResponseEntity.status(HttpStatus.LOCKED).body(manager.getStatus())
+        val ok = manager.enableManualOverride()
+        return if (ok)
+            ResponseEntity.ok(manager.getStatus())
+        else
+            ResponseEntity.status(HttpStatus.LOCKED).body(manager.getStatus())
     }
 
     @PostMapping("/override/disable")
@@ -66,7 +62,6 @@ class EncryptionController(
         manager.manualUnmount()
         return ResponseEntity.ok(manager.getStatus())
     }
-
 
     private val gson = Gson()
 
@@ -103,7 +98,7 @@ class EncryptionController(
             }
 
             // Re-init systemet etter import
-            kotlinx.coroutines.GlobalScope.launch {
+            GlobalScope.launch {
                 manager.autoInitAsync()
             }
 
@@ -132,7 +127,5 @@ class EncryptionController(
 
         return ResponseEntity.ok(manager.getStatus())
     }
-
-
 
 }
