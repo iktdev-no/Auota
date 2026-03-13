@@ -16,7 +16,6 @@ class InitOperationDecrypt(
     override fun buildInitArgs(passFile: Path): List<String> {
         return listOf(
             "-init",
-            "-plaintextnames",
             "-config", configFile.toString(),
             "-passfile", passFile.toString(),
             paths.backend.toString()

@@ -19,7 +19,16 @@ abstract class AutoInitFlowBase(
     protected abstract val mountOp: MountOperationBase
     protected abstract val verifyOp: VerifyOperationBase
 
+    // 🔥 Hook-punkter (kan override’s i DecryptAutoInitFlow)
+    protected open suspend fun beforeInit(cfg: CryptConfig) {}
+    protected open suspend fun afterInit(cfg: CryptConfig) {}
+    protected open suspend fun beforeMount(cfg: CryptConfig) {}
+    protected open suspend fun afterMount(cfg: CryptConfig) {}
+    protected open suspend fun afterVerifySuccess(cfg: CryptConfig) {}
+    protected open suspend fun afterVerifyFailure(cfg: CryptConfig) {}
+
     suspend fun run(cfg: CryptConfig): EncryptionState {
+
         // 1️⃣ Verifiser metadata
         try {
             infoValidator.ensureConsistent()
@@ -37,20 +46,35 @@ abstract class AutoInitFlowBase(
 
         // 3️⃣ Init backend hvis nødvendig
         if (!configExists && !backend.backendHasFiles()) {
+            beforeInit(cfg)
+
             log.info("Ingen filer i backend, init kryptert backend")
             val ok = initOp.init(cfg)
             if (!ok) return EncryptionState.FAILED
+
+            afterInit(cfg)
         }
 
         // 4️⃣ Mount alltid hvis ikke allerede mountet
         if (!backend.isMounted()) {
+            beforeMount(cfg)
+
             log.info("Mounting backend")
             val ok = mountOp.mount(cfg)
             if (!ok) return EncryptionState.FAILED
+
+            afterMount(cfg)
         }
 
         // 5️⃣ Verifiser mount
         val verified = verifyOp.verify()
-        return if (verified) EncryptionState.READY else EncryptionState.FAILED
+
+        return if (verified) {
+            afterVerifySuccess(cfg)
+            EncryptionState.READY
+        } else {
+            afterVerifyFailure(cfg)
+            EncryptionState.FAILED
+        }
     }
 }

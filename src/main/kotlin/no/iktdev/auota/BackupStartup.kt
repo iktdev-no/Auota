@@ -46,7 +46,7 @@ class BackupStartup(
                 .filter { it == JottaDaemonState.RUNNING }
                 .first()
 
-            delay(1000)
+            delay(5000)
             log.info("BackupStartup: jottad er klar → sjekker backup-status...")
 
             val status = jottaStatusService.getStatus()

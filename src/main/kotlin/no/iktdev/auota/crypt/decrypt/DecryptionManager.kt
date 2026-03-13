@@ -16,6 +16,7 @@ import no.iktdev.auota.crypt.decrypt.operations.VerifyOperationDecrypt
 import no.iktdev.auota.crypt.info.CryptInfoStore
 import no.iktdev.auota.crypt.info.CryptInfoValidator
 import no.iktdev.auota.models.EncryptionStatus
+import no.iktdev.auota.service.DecryptedSyncService
 import no.iktdev.auota.sse.SseHub
 import org.springframework.stereotype.Service
 import java.nio.file.Files
@@ -24,7 +25,8 @@ import java.nio.file.Paths
 @Service
 class DecryptionManager(
     override val runCli: RunCli,
-    override val sseHub: SseHub
+    override val sseHub: SseHub,
+    val syncService: DecryptedSyncService
 ) : AbstractCryptManager(runCli, sseHub) {
 
     private val log = KotlinLogging.logger {}
@@ -33,7 +35,10 @@ class DecryptionManager(
     override val infoFile = Paths.get("/config/encryption-info.json")
 
     val encryptedDataPath = Paths.get("/download-encrypted")
-    override val dataPath = Paths.get("/download")
+//    override val dataPath = Paths.get("/download")
+    override val dataPath = Paths.get("/download-decrypted")
+    private val exportFolder = Paths.get("/download")
+
 
     override val backendInfoFile = encryptedDataPath.resolve(".auota-info.json")
 
@@ -58,6 +63,9 @@ class DecryptionManager(
     override val configImportOp = ConfigImportOperation(paths)
 
     override val autoInitFlow = DecryptAutoInitFlow(
+        decryptedSyncService = syncService,
+        decryptedView = dataPath,
+        exportFolder = exportFolder,
         infoValidator = infoValidator,
         backend = backendChecker,
         initOp = initOp,
