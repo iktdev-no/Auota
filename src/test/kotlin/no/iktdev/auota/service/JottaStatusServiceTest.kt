@@ -1,7 +1,6 @@
 package no.iktdev.auota.service
 
 import no.iktdev.auota.cli.JottaCli
-import no.iktdev.auota.crypt.encrypt.EncryptionManager
 import no.iktdev.auota.service.status.JottaStatusService
 import no.iktdev.auota.sse.SseHub
 import org.junit.jupiter.api.Assertions.*
@@ -12,13 +11,11 @@ class JottaStatusServiceTest {
 
     private val cli = mock<JottaCli>()
     private val sse = mock<SseHub>()
-    private val encryptionManager = mock<EncryptionManager>()
     private val jottadManager = mock<JottadManager>()
 
     val service = JottaStatusService(
         cli = cli,
         sse = sse,
-        encryptionManager = encryptionManager,
         jottadManager = jottadManager
     )
 

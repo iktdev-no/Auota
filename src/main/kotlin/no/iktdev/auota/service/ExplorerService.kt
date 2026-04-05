@@ -1,8 +1,6 @@
 package no.iktdev.auota.service
 
 import no.iktdev.auota.backup.BackupConfigStore
-import no.iktdev.auota.crypt.encrypt.EncryptionManager
-import no.iktdev.auota.models.crypt.EncryptionState
 import no.iktdev.auota.models.files.*
 import no.iktdev.auota.service.status.JottaStatusService
 import org.springframework.stereotype.Service
@@ -14,30 +12,24 @@ import java.nio.file.Paths
 @Service
 class ExplorerService(
     private val jottaStatusService: JottaStatusService,
-    private val encryption: EncryptionManager,
     private val backupConfigStore: BackupConfigStore
 ) {
 
-    private val alternativeFolders = mapOf(
+    private val alternativeFolders: Map<String, String> = mapOf(
         "data" to "/data",
         "media" to "/media",
         "mount" to "/mount",
         "mnt" to "/mnt"
     )
 
-    private val success = listOf(EncryptionState.READY, EncryptionState.MANUAL_OVERRIDE)
-
     suspend fun listRoots(): List<Roots> {
-        val roots = mutableListOf<Roots>()
+        val roots: MutableList<Roots> = mutableListOf()
 
-        // Upload (bruker alltid /upload i UI)
+        // Upload
         roots += Roots(
             id = "upload",
             name = "Upload",
-            type = if (encryption.state.value in success)
-                RootType.UploadEncrypted
-            else
-                RootType.UploadUnencrypted,
+            type = RootType.Upload,
             path = "/upload"
         )
 
@@ -50,7 +42,7 @@ class ExplorerService(
         )
 
         // Alternative mapper
-        alternativeFolders.forEach { (id, folder) ->
+        alternativeFolders.forEach { (id: String, folder: String) ->
             val f = File(folder)
             if (f.exists() && f.isDirectory) {
                 roots += Roots(
@@ -68,38 +60,29 @@ class ExplorerService(
                 id = "jotta",
                 name = "Jotta Cloud",
                 type = RootType.Jotta,
-                path = "/" // JottaFs root
+                path = "/"
             )
         }
 
         return roots
     }
 
-    /**
-     * Lokal filutforsker for ALLE lokale paths.
-     * Upload håndteres automatisk av backend via encryption.paths.
-     */
     fun listAt(path: String): List<IFile> {
-        // Hvis path er root → returner kun definerte lokale roots
         if (path == "/") {
             val cfg = backupConfigStore.load()
 
             val folders: MutableList<IFile> = mutableListOf()
-            (if(encryption.state.value in success) {
-                encryption.paths.mount.toFile().toFileInfo(cfg)
-            } else {
-                encryption.paths.backend.toFile().toFileInfo(cfg)
-            }).also { folders.add(it) }
-            File("/download").toFileInfo(cfg)
-                .also { folders.add(it) }
-            alternativeFolders.mapValues { File(it.value).toFileInfo(cfg) }
-                .also { folders.addAll(it.values) }
+            File("/upload").toFileInfo(cfg).also { folders.add(it) }
+            File("/download").toFileInfo(cfg).also { folders.add(it) }
+
+            alternativeFolders.values
+                .map { folder -> File(folder).toFileInfo(cfg) }
+                .also { folders.addAll(it) }
 
             return folders
         }
 
-        // Ellers: vanlig lokal filutforsking
-        val resolvedPath = resolveLocalPath(path)
+        val resolvedPath: String = path
         val dir = File(resolvedPath)
 
         if (!dir.exists() || !dir.isDirectory) return emptyList()
@@ -111,27 +94,8 @@ class ExplorerService(
             ?: emptyList()
     }
 
-
-    /**
-     * Oversetter /upload til riktig fysisk mappe basert på kryptering.
-     */
-    private fun resolveLocalPath(path: String): String {
-        return if (path.startsWith("/upload")) {
-            val relative = path.removePrefix("/upload")
-            val base = if (encryption.state.value in success)
-                encryption.paths.mount
-            else
-                encryption.paths.backend
-
-            base.resolve(relative).normalize().toString()
-        } else {
-            path
-        }
-    }
-
     fun pathToFile(path: String): IFile? {
-        val resolved = resolveLocalPath(path)
-        val file = File(resolved)
+        val file = File(path)
         if (!file.exists()) return null
 
         val cfg = backupConfigStore.load()
@@ -141,17 +105,17 @@ class ExplorerService(
     private fun File.toFileInfo(cfg: no.iktdev.auota.backup.BackupConfig): IFile {
         val filePath: Path = this.toPath()
 
-        val isIncluded = cfg.roots.any { root -> filePath.startsWith(Paths.get(root)) }
-        val isExcluded = cfg.excluded.any { item ->
+        val isIncluded: Boolean = cfg.roots.any { root ->
+            filePath.startsWith(Paths.get(root))
+        }
+
+        val isExcluded: Boolean = cfg.excluded.any { item ->
             item.excludePaths.any { excludePath ->
                 filePath.startsWith(Paths.get(excludePath))
             }
         }
 
-        val isEncrypted = filePath.startsWith(encryption.paths.mount)
-        val isBackend = filePath.startsWith(encryption.paths.backend)
-
-        val fileActions = buildActions(
+        val fileActions: List<FileAction> = buildActions(
             isIncluded = isIncluded,
             isExcluded = isExcluded,
             isFolder = this.isDirectory,
@@ -166,8 +130,8 @@ class ExplorerService(
                 actions = fileActions,
                 isInBackup = isIncluded,
                 isExcludedFromBackup = isExcluded,
-                isEncrypted = isEncrypted,
-                isDataSource = isBackend
+                isEncrypted = false,
+                isDataSource = false
             )
         } else {
             File(
@@ -179,33 +143,24 @@ class ExplorerService(
                 size = this.length(),
                 isInBackup = isIncluded,
                 isExcludedFromBackup = isExcluded,
-                isEncrypted = isEncrypted,
-                isDataSource = isBackend
+                isEncrypted = false,
+                isDataSource = false
             )
         }
     }
 
     fun canBeAddedToBackup(path: Path): Boolean {
-        val p = path.normalize()
+        val p: Path = path.normalize()
 
-        // Finn faktisk upload-rot (kryptert eller ukryptert)
-        val uploadRoot = if (encryption.state.value in success)
-            encryption.paths.mount.normalize()
-        else
-            encryption.paths.backend.normalize()
+        // Nå er upload alltid /upload
+        val uploadRoot: Path = Paths.get("/upload").normalize()
 
-        // 1. Må være en mappe
         if (!Files.isDirectory(p)) return false
-
-        // 2. Må ligge under upload-root
         if (!p.startsWith(uploadRoot)) return false
-
-        // 3. Men ikke selve upload-root
         if (p == uploadRoot) return false
 
         return true
     }
-
 
     private fun buildActions(
         isIncluded: Boolean,
@@ -214,10 +169,9 @@ class ExplorerService(
         filePath: Path
     ): List<FileAction> {
 
-        val actions = mutableListOf<FileAction>()
-        val canAdd = if (isFolder) canBeAddedToBackup(filePath) else false
+        val actions: MutableList<FileAction> = mutableListOf()
+        val canAdd: Boolean = if (isFolder) canBeAddedToBackup(filePath) else false
 
-        // Backup-handling
         if (isIncluded) {
             actions += FileAction(FileActionType.RemoveFromBackup)
             actions += FileAction(FileActionType.ExcludeFromBackup)
@@ -229,7 +183,6 @@ class ExplorerService(
             actions += FileAction(FileActionType.IncludeInBackup)
         }
 
-        // Upload-handling
         if (isUnderAlternativeFolder(filePath)) {
             actions += FileAction(FileActionType.Upload)
         }
@@ -238,12 +191,9 @@ class ExplorerService(
     }
 
     private fun isUnderAlternativeFolder(path: Path): Boolean {
-        val normalized = path.toAbsolutePath().normalize().toString()
-
+        val normalized: String = path.toAbsolutePath().normalize().toString()
         return alternativeFolders.values.any { alt ->
             normalized.startsWith(alt)
         }
     }
-
-
 }

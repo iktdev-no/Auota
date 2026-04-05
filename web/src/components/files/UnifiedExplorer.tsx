@@ -1,5 +1,6 @@
 import { Box, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import { apiGet } from "../../api/client";
 import type { FileAction, IFile, JottaFs } from "../../types/types";
 import type { UnifiedFile } from "../../types/webtypes";
@@ -12,93 +13,130 @@ import { UnifiedFileList } from "./UnifiedFileList";
 export type RootKind = "root" | "local" | "jotta";
 
 export interface UnifiedExplorerProps {
-    root: RootKind;
-    path: string;
-    onNavigate: (root: RootKind, path: string) => void;
-    onFileAction: (action: FileAction, file: UnifiedFile) => void;
+  root: RootKind;
+  path: string;
+  onNavigate: (root: RootKind, path: string) => void;
+  onFileAction: (action: FileAction, file: UnifiedFile) => void;
 }
 
 export default function UnifiedExplorer(props: UnifiedExplorerProps) {
-    const { root, path, onNavigate, onFileAction } = props;
+  const { root, path, onNavigate, onFileAction } = props;
 
-    const [files, setFiles] = useState<UnifiedFile[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
+  const [files, setFiles] = useState<UnifiedFile[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-    // Context menu state
-    const [contextFile, setContextFile] = useState<UnifiedFile | null>(null);
-    const [contextPos, setContextPos] = useState<{ mouseX: number; mouseY: number } | null>(null);
+  // Context menu state
+  const [contextFile, setContextFile] = useState<UnifiedFile | null>(null);
+  const [contextPos, setContextPos] = useState<{
+    mouseX: number;
+    mouseY: number;
+  } | null>(null);
 
-    const load = useCallback(
-        async (p: string): Promise<void> => {
-            try {
-                setLoading(true);
-                setError(null);
+  const load = useCallback(
+    async (p: string): Promise<void> => {
+      try {
+        setLoading(true);
+        setError(null);
 
-                if (root === "local") {
-                    const data = await apiGet<IFile[]>(`/files/list?path=${encodeURIComponent(p)}`);
-                    setFiles(data.map(mapLocalToUnified));
-                } else {
-                    const data = await apiGet<JottaFs>(`/files/jotta?path=${encodeURIComponent(p)}`);
-                    setFiles(mapJottaToUnified(data));
-                }
-            } catch (e) {
-                console.error(e);
-                setError("Kunne ikke laste mappe");
-            } finally {
-                setLoading(false);
-            }
-        },
-        [root]
-    );
+        if (root === "local") {
+          const data = await apiGet<IFile[]>(
+            `/files/list?path=${encodeURIComponent(p)}`,
+          );
+          setFiles(data.map(mapLocalToUnified));
+        } else {
+          const data = await apiGet<JottaFs>(
+            `/files/jotta?path=${encodeURIComponent(p)}`,
+          );
+          setFiles(mapJottaToUnified(data));
+        }
+      } catch (e) {
+        console.error(e);
+        setError("Kunne ikke laste mappe");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [root],
+  );
 
-    useEffect(() => {
-        void load(path);
-    }, [path, load]);
+  useEffect(() => {
+    void load(path);
+  }, [path, load]);
 
-    const handleContextMenu = (event: React.MouseEvent, file: UnifiedFile) => {
-        event.preventDefault();
-        setContextFile(file);
-        setContextPos({ mouseX: event.clientX + 2, mouseY: event.clientY - 6 });
-    };
+  const handleContextMenu = (event: React.MouseEvent, file: UnifiedFile) => {
+    event.preventDefault();
+    setContextFile(file);
+    setContextPos({ mouseX: event.clientX + 2, mouseY: event.clientY - 6 });
+  };
 
-    const closeContextMenu = () => {
-        setContextPos(null);
-        setContextFile(null);
-    };
+  const closeContextMenu = () => {
+    setContextPos(null);
+    setContextFile(null);
+  };
 
-    if (error !== null) {
-        return (
-            <Typography color="error" sx={{ p: 2 }}>
-                {error}
-            </Typography>
-        );
+  const handleFileAction = async (action: FileAction, file: UnifiedFile) => {
+    try {
+      await onFileAction(action, file);
+      switch (action.id) {
+        case "Upload":
+          toast.success(`Lastet opp: ${file.name}`);
+          break;
+        case "Download":
+          toast.success(`Lastet ned: ${file.name}`);
+          break;
+        case "AddToBackup":
+          toast.success("Lagt til i backup");
+          break;
+        case "RemoveFromBackup":
+          toast.success("Fjernet fra backup");
+          break;
+        case "ExcludeFromBackup":
+          toast.success("Ekskludert fra backup");
+          break;
+        case "IncludeInBackup":
+          toast.success("Inkludert i backup");
+          break;
+      }
+    } catch (err: any) {
+      toast.error(err?.message ?? "Ukjent feil");
+    } finally {
+      closeContextMenu();
     }
+  };
 
+  if (error !== null) {
     return (
-        <Box sx={{ flex: 1, overflow: "auto", width: "100%" }}>
-            {files.length === 0 && !loading ? (
-                <EmptyFolder />
-            ) : (
-                <UnifiedFileList
-                    files={files}
-                    onOpenFolder={(file) => onNavigate(root, file.uri)}
-                    onContextMenu={handleContextMenu}
-                />
-            )}
-
-            <FileContextMenu
-                file={contextFile}
-                position={contextPos}
-                onClose={closeContextMenu}
-                onFileAction={onFileAction}
-                onCopyPath={(file) => {
-                    navigator.clipboard.writeText(file.uri);
-                    closeContextMenu();
-                }}
-            />
-
-            <LoadingToast open={loading} />
-        </Box>
+      <Typography color="error" sx={{ p: 2 }}>
+        {error}
+      </Typography>
     );
+  }
+
+  return (
+    <Box sx={{ flex: 1, overflow: "auto", width: "100%" }}>
+      {files.length === 0 && !loading ? (
+        <EmptyFolder />
+      ) : (
+        <UnifiedFileList
+          files={files}
+          onOpenFolder={(file) => onNavigate(root, file.uri)}
+          onContextMenu={handleContextMenu}
+        />
+      )}
+
+      <FileContextMenu
+        file={contextFile}
+        position={contextPos}
+        onClose={closeContextMenu}
+        onFileAction={handleFileAction}
+        onCopyPath={(file) => {
+          navigator.clipboard.writeText(file.uri);
+          closeContextMenu();
+        }}
+      />
+
+      <LoadingToast open={loading} />
+    </Box>
+  );
 }

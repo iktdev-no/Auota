@@ -11,28 +11,27 @@ import { HealthPage } from "./pages/HealthPage";
 import { LogsPage } from "./pages/LogsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SseProvider } from "./sse/SseProvider";
-import { EncryptionStatusProvider } from "./status/EncryptionStatusProvider";
 import { JottaDaemonStatusProvider } from "./status/JottaDaemonStatusProvider";
 import { JottaStatusProvider } from "./status/JottaStatusProvider";
 
 interface AppLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const drawerWidth = sidebarOpen ? 260 : 64
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const drawerWidth = sidebarOpen ? 260 : 64;
 
   return (
     <Box
       sx={{
         display: "flex",
-        width: "100vw",     // ← kritisk
-        height: "100vh",    // ← kritisk
-        overflow: "hidden"  // ← hindrer scroll her
+        width: "100vw", // ← kritisk
+        height: "100vh", // ← kritisk
+        overflow: "hidden", // ← hindrer scroll her
       }}
     >
-      <TopBar onToggleSidebar={() => setSidebarOpen(prev => !prev)} />
+      <TopBar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
 
       <Sidebar open={sidebarOpen} />
 
@@ -43,34 +42,28 @@ export function AppLayout({ children }: AppLayoutProps) {
           ml: `${drawerWidth}px`,
           mt: "64px",
           width: `calc(100vw - ${drawerWidth}px)`, // ← kritisk
-          height: `calc(100vh - 56px)`,            // ← kritisk
-          overflow: "hidden",                      // ← main skal ikke scrolle
-          position: "relative"                     // ← for sticky i child
+          height: `calc(100vh - 56px)`, // ← kritisk
+          overflow: "hidden", // ← main skal ikke scrolle
+          position: "relative", // ← for sticky i child
         }}
       >
         {children}
       </Box>
     </Box>
-  )
+  );
 }
 
 export function AppProviders({ children }: PropsWithChildren) {
   return (
     <SseProvider>
       <JottaStatusProvider>
-        <JottaDaemonStatusProvider>
-          <EncryptionStatusProvider>
-            {children}
-          </EncryptionStatusProvider>
-        </JottaDaemonStatusProvider>
+        <JottaDaemonStatusProvider>{children}</JottaDaemonStatusProvider>
       </JottaStatusProvider>
     </SseProvider>
-  )
+  );
 }
 
-
 export default function App() {
-
   return (
     <BrowserRouter>
       <AppProviders>
@@ -85,13 +78,13 @@ export default function App() {
             <Route path="/logs" element={<LogsPage />} />
           </Routes>
           <ToastContainer
-            position='bottom-left'
+            position="bottom-left"
             autoClose={3000}
             hideProgressBar={true}
             newestOnTop={true}
             closeOnClick
             pauseOnHover
-            theme='dark'
+            theme="dark"
           />
         </AppLayout>
       </AppProviders>

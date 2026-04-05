@@ -10,8 +10,7 @@ data class Roots(
 
 enum class RootType {
     Jotta,
-    UploadUnencrypted,
-    UploadEncrypted,
+    Upload,
     Download,
     LocalFolder
 }

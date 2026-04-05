@@ -34,6 +34,7 @@ export interface JottaTransfer {
   Local: string;
   Remaining: TransferRemaining | null;
   Remote: string;
+  Selection: string | null;
   SelectionCount: TransferSelectionCount | null;
   StartedTimeMs: number | null;
   Total: TransferTotal;
@@ -107,11 +108,8 @@ export interface GocryptfsConfigExport {
 
 export interface SystemHealth {
   auth: AuthStatus;
-  backendExists: boolean;
-  encryption: EncryptionState;
   jottad: JottaDaemonState;
   lastUpdated: number;
-  mounted: boolean;
 }
 
 export interface BackupHistory {
@@ -161,7 +159,7 @@ export interface File {
   uri: string;
 }
 
-export type RootType = "Jotta" | "UploadUnencrypted" | "UploadEncrypted" | "Download" | "LocalFolder"
+export type RootType = "Jotta" | "Upload" | "Download" | "LocalFolder"
 
 export type IFile = File | Folder
 
@@ -310,20 +308,6 @@ export interface AccountInfo {
   Subscription: number | null;
   SubscriptionNameLocalized: string | null;
   Usage: number | null;
-}
-
-export interface EncryptionStatus {
-  algorithm: string | null;
-  backendExists: boolean;
-  enabled: boolean;
-  exportable: boolean;
-  manualOverride: boolean;
-  mounted: boolean;
-  passwordIncorrect: boolean;
-  passwordSet: boolean;
-  reason: string | null;
-  state: EncryptionState;
-  verified: boolean;
 }
 
 export type AuthStep = "LICENSE" | "PAT" | "WAIT" | "DEVICE_NAME" | "DONE" | "ALREADY_AUTHED" | "CONFIRM" | "ERROR" | "CANCELLED" | "UNKNOWN"

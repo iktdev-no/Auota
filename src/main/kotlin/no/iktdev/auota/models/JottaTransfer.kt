@@ -9,7 +9,8 @@ data class JottaTransfer(
     val CompletedTimeMs: Long?,
     val StartedTimeMs: Long?,
     val SelectionCount: TransferSelectionCount?,
-    val Errors: TransferErrors?
+    val Errors: TransferErrors?,
+    val Selection: String? = null
 )
 
 data class TransferTotal(
