@@ -21,10 +21,9 @@ RUN mkdir -p /etc/apt/keyrings && \
     echo "deb [signed-by=/etc/apt/keyrings/jotta.gpg] https://repo.jotta.cloud/debian debian main" \
         > /etc/apt/sources.list.d/jotta-cli.list
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends --no-install-suggests \
-        jotta-cli && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends jotta-cli
+RUN rm -rf /var/lib/apt/lists/*
 
 # App directories
 RUN mkdir -p /config /data /media /mount /mnt /usr/share/app /upload /download
