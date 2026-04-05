@@ -13,9 +13,10 @@ RUN apt-get update && \
         gnupg && \
     rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL https://repo.jotta.us/public.gpg | gpg --dearmor -o /usr/share/keyrings/jotta.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/jotta.gpg] https://repo.jotta.us/debian debian main" \
-        > /etc/apt/sources.list.d/jotta.list && \
+# Jottacloud repo (NY URL + NY NØKKEL)
+RUN curl -fsSL https://repo.jotta.cloud/jotta.gpg -o /usr/share/keyrings/jotta.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/jotta.gpg] https://repo.jotta.cloud/debian debian main" \
+        > /etc/apt/sources.list.d/jotta-cli.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends --no-install-suggests \
         jotta-cli && \
