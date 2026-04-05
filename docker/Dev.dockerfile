@@ -1,7 +1,7 @@
-# Prod.dockerfile.dev
 FROM bskjon/azuljava:21
 
 ENV DEBIAN_FRONTEND=noninteractive
+
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -14,14 +14,16 @@ RUN apt-get update && \
         gnupg && \
     rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL https://repo.jotta.us/public.gpg | gpg --dearmor -o /usr/share/keyrings/jotta.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/jotta.gpg] https://repo.jotta.us/debian debian main" \
-        > /etc/apt/sources.list.d/jotta.list && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        jotta-cli \
-        gocryptfs && \
-    rm -rf /var/lib/apt/lists/*
+# Jottacloud repo (Debian-compatible keyring path)
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://repo.jotta.cloud/jotta.gpg -o /etc/apt/keyrings/jotta.gpg && \
+    chmod 644 /etc/apt/keyrings/jotta.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/jotta.gpg] https://repo.jotta.cloud/debian debian main" \
+        > /etc/apt/sources.list.d/jotta-cli.list
+
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends jotta-cli
+RUN rm -rf /var/lib/apt/lists/*
 
 
 RUN mkdir -p /config /data /media /mnt /mount /usr/share/app

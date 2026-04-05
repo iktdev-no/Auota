@@ -139,7 +139,13 @@ class JottaTransferService(
     suspend fun listUploads(): List<JottaTransfer> {
         return when (val result = cli.run("list", "uploads", "--json")) {
             is JottaCli.RunResult.Success -> {
-                mapper.readValue(result.output)
+                val out = result.output.trim()
+                if (out == "{}" || out.isBlank()) {
+                    emptyList()
+                } else {
+                    mapper.readValue(out)
+
+                }
             }
             is JottaCli.RunResult.Error -> {
                 throw IllegalStateException("Failed to list uploads: ${result.output}")
@@ -150,7 +156,12 @@ class JottaTransferService(
     suspend fun listDownloads(): List<JottaTransfer> {
         return when (val result = cli.run("list", "downloads", "--json")) {
             is JottaCli.RunResult.Success -> {
-                mapper.readValue(result.output)
+                val out = result.output.trim()
+                if (out == "{}" || out.isBlank()) {
+                    emptyList()
+                } else {
+                    mapper.readValue(out)
+                }
             }
             is JottaCli.RunResult.Error -> {
                 throw IllegalStateException("Failed to list downloads: ${result.output}")

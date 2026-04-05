@@ -9,6 +9,7 @@ import no.iktdev.auota.models.JottaDaemonState
 import org.springframework.stereotype.Service
 import java.io.File
 import java.io.RandomAccessFile
+import java.nio.file.Files
 
 @Service
 class JottadManager {
@@ -103,45 +104,58 @@ class JottadManager {
     }
 
 
+    private suspend fun waitForStartupValue(): String = withContext(Dispatchers.IO) {
 
-    private suspend fun waitForStartupValue(): String {
-        return withContext(Dispatchers.IO) {
+        val path = logFile.toPath()
 
-            // 1. Vent til loggfilen finnes
-            while (!logFile.exists()) {
-                delay(100)
-            }
+        // 1. Wait until file exists
+        while (!Files.exists(path)) {
+            delay(100)
+        }
 
-            val reader = RandomAccessFile(logFile, "r")
-            reader.seek(reader.length())
+        // 2. Open a UTF-8 reader
+        Files.newBufferedReader(path, Charsets.UTF_8).use { reader ->
 
             var startup: String? = null
+            var line: String?
 
-            // 2. Tail til vi finner jottad.startup => <value>
+            // 3. First pass: read entire existing file
+            while (reader.readLine().also { line = it } != null) {
+                val match = startupRegex.find(line!!)
+                if (match != null) {
+                    startup = match.groupValues[1]
+                    return@withContext startup
+                }
+            }
+
+            // 4. Tail mode: watch for new lines
+            val startTime = System.currentTimeMillis()
+            val timeoutMs = 15_000L // 15 seconds
+
             while (startup == null) {
-                val line = reader.readLine()
+
+                // Timeout safety
+                if (System.currentTimeMillis() - startTime > timeoutMs) {
+                    return@withContext "timeout"
+                }
+
+                line = reader.readLine()
+
                 if (line == null) {
                     delay(100)
                     continue
                 }
 
-                val decoded = line.toByteArray(Charsets.ISO_8859_1)
-                    .toString(Charsets.UTF_8)
-
-                val match = startupRegex.find(decoded)
+                val match = startupRegex.find(line)
                 if (match != null) {
-                    val value = match.groupValues[1]
-                    log.info("Detected jottad.startup => $value")
-                    startup = value
+                    startup = match.groupValues[1]
+                    return@withContext startup
                 }
             }
 
             startup
         }
     }
-
-
-
 
 
     fun getPid(): Long? = pid
