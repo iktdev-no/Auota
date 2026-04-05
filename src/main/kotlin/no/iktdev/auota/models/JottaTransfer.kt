@@ -2,9 +2,9 @@ package no.iktdev.auota.models
 
 data class JottaTransfer(
     val Id: String,
-    val Remote: String,
-    val Local: String,
-    val Total: TransferTotal,
+    val Remote: String?,              // nullable
+    val Local: String?,               // nullable
+    val Total: TransferTotal?,        // nullable
     val Remaining: TransferRemaining?,
     val CompletedTimeMs: Long?,
     val StartedTimeMs: Long?,
