@@ -68,7 +68,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./docker/Dockerfile
+          file: ./docker/Prod.dockerfile
           push: true
           tags: |
             ${{ env.DOCKER_IMAGE }}:latest
