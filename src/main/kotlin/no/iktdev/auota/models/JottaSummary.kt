@@ -1,5 +1,7 @@
 package no.iktdev.auota.models
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+
 data class JottaSummary(
     val success: Boolean,
     val raw: String,
@@ -76,8 +78,8 @@ data class EnabledBackup(
 data class BackupFolder(
     val Name: String? = null,
     val Path: String? = null,
-    val Count: Map<String, Any>? = null,
-    val Uploading: Map<String, Any>? = null,
+    val Count: UploadEntry? = null,
+    val Uploading: UploadEntry? = null,
     val Errors: Map<String, Any>? = null,
     val DeviceID: String? = null,
     val ErrorFilesCount: Map<String, Any>? = null,
@@ -97,7 +99,14 @@ data class BackupHistory(
     val Total: Map<String, Any>? = null
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class UploadHistory(
-    val Started: Map<String, Any>? = null,
-    val Completed: Map<String, Any>? = null
+    val Started: UploadEntry? = null,
+    val Completed: UploadEntry? = null
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class UploadEntry(
+    val Files: Long? = null,
+    val Bytes: Long? = null,
 )

@@ -29,15 +29,16 @@ export interface GlobalState {
 
 export interface JottaTransfer {
   CompletedTimeMs: number | null;
+  CriticalError: TransferErrors | null;
   Errors: TransferErrors | null;
   Id: string;
-  Local: string;
+  Local: string | null;
   Remaining: TransferRemaining | null;
-  Remote: string;
+  Remote: string | null;
   Selection: string | null;
   SelectionCount: TransferSelectionCount | null;
   StartedTimeMs: number | null;
-  Total: TransferTotal;
+  Total: TransferTotal | null;
 }
 
 export interface OperationRequest {
@@ -58,7 +59,7 @@ export interface UserInfo {
 export type AuthStatus = "LOGGED_IN" | "LOGGED_OUT" | "UNKNOWN"
 
 export interface BackupFolder {
-  Count: Record<string, any> | null;
+  Count: UploadEntry | null;
   DeviceID: string | null;
   ErrorFilesCount: Record<string, any> | null;
   ErrorFoldersCount: number | null;
@@ -69,12 +70,12 @@ export interface BackupFolder {
   Name: string | null;
   NextBackupMS: number | null;
   Path: string | null;
-  Uploading: Record<string, any> | null;
+  Uploading: UploadEntry | null;
 }
 
 export interface UploadHistory {
-  Completed: Record<string, any> | null;
-  Started: Record<string, any> | null;
+  Completed: UploadEntry | null;
+  Started: UploadEntry | null;
 }
 
 export interface JottaVersionInfo {
@@ -131,6 +132,11 @@ export interface JottadStatus {
   pid: number;
   state: JottaDaemonState;
   timestamp: number;
+}
+
+export interface UploadEntry {
+  Bytes: number | null;
+  Files: number | null;
 }
 
 export interface JottaStatus {
