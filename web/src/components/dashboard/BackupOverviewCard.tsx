@@ -32,10 +32,8 @@ export function BackupOverviewCard({ data }: Props) {
               errors === 0 ? "success" : errors < 5 ? "warning" : "error";
 
             // Progress‑beregning
-            const totalFiles = b.Count?.Files ?? 0;
             const totalBytes = b.Count?.Bytes ?? 0;
 
-            const remainingFiles = b.Uploading?.Files ?? 0;
             const remainingBytes = b.Uploading?.Bytes ?? 0;
 
             const uploadedBytes = totalBytes - remainingBytes;
